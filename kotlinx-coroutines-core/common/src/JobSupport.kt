@@ -160,7 +160,7 @@ public open class JobSupport constructor(active: Boolean) : Job, ChildJob, Paren
      * If final state of the job is [Incomplete], then it is boxed into [IncompleteStateBox]
      * and should be [unboxed][unboxState] before returning to user code.
      */
-    internal val state: Any? get() {
+    val state: Any? get() {
         _state.loop { state -> // helper loop on state (complete in-progress atomic operations)
             if (state !is OpDescriptor) return state
             state.perform(this)
@@ -394,7 +394,7 @@ public open class JobSupport constructor(active: Boolean) : Job, ChildJob, Paren
      * Override to provide the actual [start] action.
      * This function is invoked exactly once when non-active coroutine is [started][start].
      */
-    internal open fun onStartInternal() {}
+    open fun onStartInternal() {}
 
     public final override fun getCancellationException(): CancellationException =
         when (val state = this.state) {
@@ -593,7 +593,7 @@ public open class JobSupport constructor(active: Boolean) : Job, ChildJob, Paren
      *
      * @suppress **This is unstable API and it is subject to change.**
      */
-    internal open val onCancelComplete: Boolean get() = false
+    open val onCancelComplete: Boolean get() = false
 
     // external cancel with cause, never invoked implicitly from internal machinery
     public override fun cancel(cause: CancellationException?) {
@@ -638,7 +638,7 @@ public open class JobSupport constructor(active: Boolean) : Job, ChildJob, Paren
 
     // cause is Throwable or ParentJob when cancelChild was invoked
     // returns true is exception was handled, false otherwise
-    internal fun cancelImpl(cause: Any?): Boolean {
+    fun cancelImpl(cause: Any?): Boolean {
         if (onCancelComplete) {
             // make sure it is completing, if cancelMakeCompleting returns true it means it had make it
             // completing and had recorded exception
@@ -782,7 +782,7 @@ public open class JobSupport constructor(active: Boolean) : Job, ChildJob, Paren
      * @throws IllegalStateException if job is already complete or completing
      * @suppress **This is unstable API and it is subject to change.**
      */
-    internal fun makeCompletingOnce(proposedUpdate: Any?, mode: Int): Boolean = loopOnState { state ->
+    fun makeCompletingOnce(proposedUpdate: Any?, mode: Int): Boolean = loopOnState { state ->
         when (tryMakeCompleting(state, proposedUpdate, mode)) {
             COMPLETING_ALREADY_COMPLETING -> throw IllegalStateException("Job $this is already complete or completing, " +
                 "but is being completed with $proposedUpdate", proposedUpdate.exceptionOrNull)
@@ -917,10 +917,8 @@ public open class JobSupport constructor(active: Boolean) : Job, ChildJob, Paren
     /**
      * Override to process any exceptions that were encountered while invoking completion handlers
      * installed via [invokeOnCompletion].
-     *
-     * @suppress **This is unstable API and it is subject to change.**
      */
-    internal open fun handleOnCompletionException(exception: Throwable) {
+    open fun handleOnCompletionException(exception: Throwable) {
         throw exception
     }
 
@@ -956,7 +954,7 @@ public open class JobSupport constructor(active: Boolean) : Job, ChildJob, Paren
      * The only instance of the [Job] that does not handle its exceptions is [JobImpl] and its subclass [SupervisorJobImpl].
      * @suppress **This is unstable API and it is subject to change.*
      */
-    internal open val handlesException: Boolean get() = true
+    open val handlesException: Boolean get() = true
 
     /**
      * Handles the final job [exception] that was not handled by the parent coroutine.
@@ -994,13 +992,9 @@ public open class JobSupport constructor(active: Boolean) : Job, ChildJob, Paren
     public override fun toString(): String =
         "${toDebugString()}@$hexAddress"
 
-    @InternalCoroutinesApi
-    public fun toDebugString(): String = "${nameString()}{${stateString(state)}}"
+    fun toDebugString(): String = "${nameString()}{${stateString(state)}}"
 
-    /**
-     * @suppress **This is unstable API and it is subject to change.**
-     */
-    internal open fun nameString(): String = classSimpleName
+    open fun nameString(): String = classSimpleName
 
     private fun stateString(state: Any?): String = when (state) {
         is Finishing -> when {

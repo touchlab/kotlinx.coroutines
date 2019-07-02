@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
+ * Copyright 2016-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
  */
 
 @file:JvmMultifileClass
@@ -34,7 +34,7 @@ import kotlin.coroutines.*
  */
 @Throws(InterruptedException::class)
 public fun <T> runBlocking(context: CoroutineContext = EmptyCoroutineContext, block: suspend CoroutineScope.() -> T): T {
-    val currentThread = Thread.currentThread()
+    val currentThread = Thread.currentThread()!!
     val contextInterceptor = context[ContinuationInterceptor]
     val eventLoop: EventLoop?
     val newContext: CoroutineContext

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
+ * Copyright 2016-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
  */
 
 package kotlinx.coroutines
@@ -313,7 +313,7 @@ internal class BlockingEventLoop(
     override val thread: Thread
 ) : EventLoopImplBase()
 
-internal actual fun createEventLoop(): EventLoop = BlockingEventLoop(Thread.currentThread())
+internal actual fun createEventLoop(): EventLoop = BlockingEventLoop(Thread.currentThread()!!)
 
 /**
  * Processes next event in the current thread's event loop.
