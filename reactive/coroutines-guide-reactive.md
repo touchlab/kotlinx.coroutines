@@ -1,23 +1,3 @@
-<!--- INCLUDE .*/example-reactive-([a-z]+)-([0-9]+)\.kt 
-/*
- * Copyright 2016-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
-// This file was automatically generated from coroutines-guide-reactive.md by Knit tool. Do not edit.
-package kotlinx.coroutines.rx2.guide.$$1$$2
-
--->
-<!--- KNIT     kotlinx-coroutines-rx2/test/guide/.*\.kt -->
-<!--- TEST_OUT kotlinx-coroutines-rx2/test/guide/test/GuideReactiveTest.kt
-// This file was automatically generated from coroutines-guide-reactive.md by Knit tool. Do not edit.
-package kotlinx.coroutines.rx2.guide.test
-
-import kotlinx.coroutines.guide.test.*
-import org.junit.Test
-
-class GuideReactiveTest : ReactiveTestBase() {
--->
-
 # Guide to reactive streams with coroutines
 
 This guide explains the key differences between Kotlin coroutines and reactive streams and shows 
