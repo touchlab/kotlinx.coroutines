@@ -3,7 +3,7 @@
  */
 
 // This file was automatically generated from coroutines-guide-reactive.md by Knit tool. Do not edit.
-package kotlinx.coroutines.rx2.guide.basic02
+package kotlinx.coroutines.rx2.guide.exampleReactiveBasic02
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.reactive.*

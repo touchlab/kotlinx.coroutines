@@ -3,7 +3,7 @@
  */
 
 // This file was automatically generated from coroutines-guide-reactive.md by Knit tool. Do not edit.
-package kotlinx.coroutines.rx2.guide.basic05
+package kotlinx.coroutines.rx2.guide.exampleReactiveBasic05
 
 import io.reactivex.schedulers.*
 import kotlinx.coroutines.*
