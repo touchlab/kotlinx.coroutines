@@ -11,6 +11,7 @@ public expect open class LockFreeLinkedListNode() {
     public val isRemoved: Boolean
     public val nextNode: LockFreeLinkedListNode
     public val prevNode: LockFreeLinkedListNode
+    public val prevNodeIfNotRemoved: LockFreeLinkedListNode?
     public fun addLast(node: LockFreeLinkedListNode)
     public fun addOneIfEmpty(node: LockFreeLinkedListNode): Boolean
     public inline fun addLastIf(node: LockFreeLinkedListNode, crossinline condition: () -> Boolean): Boolean

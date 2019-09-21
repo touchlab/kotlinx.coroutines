@@ -4,8 +4,8 @@
 
 package kotlinx.coroutines.channels
 
-import kotlinx.coroutines.selects.*
 import kotlinx.coroutines.internal.*
+import kotlinx.coroutines.selects.*
 
 /**
  * Channel that buffers at most one element and conflates all subsequent `send` and `offer` invocations,
@@ -46,13 +46,14 @@ internal open class ConflatedChannel<E> : AbstractChannel<E>() {
     }
 
     private fun conflatePreviousSendBuffered(node: SendBuffered<E>) {
-        // Conflate all previous SendBuffered, helping other sends to conflate
-        var prev = node.prevNode
+        // Conflate all previous SendBuffered, helping other sends to conflate, but only as long
+        // as this node itself is not removed
+        var prev = node.prevNodeIfNotRemoved ?: return
         while (prev is SendBuffered<*>) {
             if (!prev.remove()) {
                 prev.helpRemove()
             }
-            prev = prev.prevNode
+            prev = prev.prevNodeIfNotRemoved ?: return
         }
     }
 

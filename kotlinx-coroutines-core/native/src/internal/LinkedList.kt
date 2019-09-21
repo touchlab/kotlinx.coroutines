@@ -21,6 +21,7 @@ public open class LinkedListNode {
 
     public inline val nextNode get() = _next
     public inline val prevNode get() = _prev
+    public inline val prevNodeIfNotRemoved: LockFreeLinkedListNode? get() = _prev.takeIf { !_removed }
     public inline val isRemoved get() = _removed
 
     public fun addLast(node: Node) {
