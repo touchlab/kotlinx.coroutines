@@ -10,8 +10,8 @@ import org.junit.*
 import org.junit.Assert.*
 import org.junit.runner.*
 import org.junit.runners.*
-import kotlin.random.Random
 import java.util.concurrent.atomic.*
+import kotlin.random.*
 
 /**
  * Tests cancel atomicity for channel send & receive operations, including their select versions.
@@ -24,7 +24,8 @@ class ChannelAtomicCancelStressTest(private val kind: TestChannelKind) : TestBas
         fun params(): Collection<Array<Any>> = TestChannelKind.values().map { arrayOf<Any>(it) }
     }
 
-    private val TEST_DURATION = 1000L * stressTestMultiplier
+    // todo: restore regular duration
+    private val TEST_DURATION = 10_000L * stressTestMultiplier
 
     private val dispatcher = newFixedThreadPoolContext(2, "ChannelAtomicCancelStressTest")
     private val scope = CoroutineScope(dispatcher)
