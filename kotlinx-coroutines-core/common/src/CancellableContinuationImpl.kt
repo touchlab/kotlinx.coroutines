@@ -14,10 +14,6 @@ private const val UNDECIDED = 0
 private const val SUSPENDED = 1
 private const val RESUMED = 2
 
-@JvmField
-@SharedImmutable
-internal val RESUME_TOKEN = Symbol("RESUME_TOKEN")
-
 /**
  * @suppress **This is unstable API and it is subject to change.**
  */
@@ -351,21 +347,20 @@ internal open class CancellableContinuationImpl<in T>(
         parentHandle = NonDisposableHandle
     }
 
-    // Note: Always returns RESUME_TOKEN | null
     override fun tryResume(value: T, idempotent: Any?): Any? {
         _state.loop { state ->
             when (state) {
                 is NotCompleted -> {
                     val update: Any? = if (idempotent == null) value else
-                        CompletedIdempotentResult(idempotent, value)
+                        CompletedIdempotentResult(idempotent, value, state)
                     if (!_state.compareAndSet(state, update)) return@loop // retry on cas failure
                     detachChildIfNonResuable()
-                    return RESUME_TOKEN
+                    return state
                 }
                 is CompletedIdempotentResult -> {
                     return if (state.idempotentResume === idempotent) {
                         assert { state.result === value } // "Non-idempotent resume"
-                        RESUME_TOKEN
+                        state.token
                     } else {
                         null
                     }
@@ -382,16 +377,15 @@ internal open class CancellableContinuationImpl<in T>(
                     val update = CompletedExceptionally(exception)
                     if (!_state.compareAndSet(state, update)) return@loop // retry on cas failure
                     detachChildIfNonResuable()
-                    return RESUME_TOKEN
+                    return state
                 }
                 else -> return null // cannot resume -- not active anymore
             }
         }
     }
 
-    // note: token is always RESUME_TOKEN
     override fun completeResume(token: Any) {
-        assert { token === RESUME_TOKEN }
+        // note: We don't actually use token anymore, because handler needs to be invoked on cancellation only
         dispatchResume(resumeMode)
     }
 
@@ -443,7 +437,8 @@ private class InvokeOnCancel( // Clashes with InvokeOnCancellation
 
 private class CompletedIdempotentResult(
     @JvmField val idempotentResume: Any?,
-    @JvmField val result: Any?
+    @JvmField val result: Any?,
+    @JvmField val token: NotCompleted
 ) {
     override fun toString(): String = "CompletedIdempotentResult[$result]"
 }

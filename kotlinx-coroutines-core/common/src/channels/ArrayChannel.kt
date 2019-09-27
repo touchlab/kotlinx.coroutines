@@ -50,6 +50,7 @@ internal open class ArrayChannel<E>(
     // result is `OFFER_SUCCESS | OFFER_FAILED | Closed`
     protected override fun offerInternal(element: E): Any {
         var receive: ReceiveOrClosed<E>? = null
+        var token: Any? = null
         lock.withLock {
             val size = this.size
             closedForSend?.let { return it }
@@ -64,9 +65,8 @@ internal open class ArrayChannel<E>(
                             this.size = size // restore size
                             return receive!!
                         }
-                        val token = receive!!.tryResumeReceive(element, null)
+                        token = receive!!.tryResumeReceive(element, null)
                         if (token != null) {
-                            assert { token === RESUME_TOKEN }
                             this.size = size // restore size
                             return@withLock
                         }
@@ -80,13 +80,14 @@ internal open class ArrayChannel<E>(
             return OFFER_FAILED
         }
         // breaks here if offer meets receiver
-        receive!!.completeResumeReceive(element)
+        receive!!.completeResumeReceive(token!!)
         return receive!!.offerResult
     }
 
     // result is `ALREADY_SELECTED | OFFER_SUCCESS | OFFER_FAILED | Closed`
     protected override fun offerSelectInternal(element: E, select: SelectInstance<*>): Any {
         var receive: ReceiveOrClosed<E>? = null
+        var token: Any? = null
         lock.withLock {
             val size = this.size
             closedForSend?.let { return it }
@@ -102,6 +103,8 @@ internal open class ArrayChannel<E>(
                             failure == null -> { // offered successfully
                                 this.size = size // restore size
                                 receive = offerOp.result
+                                token = offerOp.resumeToken
+                                assert { token != null }
                                 return@withLock
                             }
                             failure === OFFER_FAILED -> break@loop // cannot offer -> Ok to queue to buffer
@@ -127,7 +130,7 @@ internal open class ArrayChannel<E>(
             return OFFER_FAILED
         }
         // breaks here if offer meets receiver
-        receive!!.completeResumeReceive(element)
+        receive!!.completeResumeReceive(token!!)
         return receive!!.offerResult
     }
 
@@ -147,7 +150,7 @@ internal open class ArrayChannel<E>(
     // result is `E | POLL_FAILED | Closed`
     protected override fun pollInternal(): Any? {
         var send: Send? = null
-        var resumed = false
+        var token: Any? = null
         var result: Any? = null
         lock.withLock {
             val size = this.size
@@ -161,10 +164,8 @@ internal open class ArrayChannel<E>(
             if (size == capacity) {
                 loop@ while (true) {
                     send = takeFirstSendOrPeekClosed() ?: break
-                    val token = send!!.tryResumeSend(null)
+                    token = send!!.tryResumeSend(null)
                     if (token != null) {
-                        assert { token === RESUME_TOKEN }
-                        resumed = true
                         replacement = send!!.pollResult
                         break@loop
                     }
@@ -177,15 +178,15 @@ internal open class ArrayChannel<E>(
             head = (head + 1) % buffer.size
         }
         // complete send the we're taken replacement from
-        if (resumed)
-            send!!.completeResumeSend()
+        if (token != null)
+            send!!.completeResumeSend(token!!)
         return result
     }
 
     // result is `ALREADY_SELECTED | E | POLL_FAILED | Closed`
     protected override fun pollSelectInternal(select: SelectInstance<*>): Any? {
         var send: Send? = null
-        var success = false
+        var token: Any? = null
         var result: Any? = null
         lock.withLock {
             val size = this.size
@@ -203,7 +204,8 @@ internal open class ArrayChannel<E>(
                     when {
                         failure == null -> { // polled successfully
                             send = pollOp.result
-                            success = true
+                            token = pollOp.resumeToken
+                            assert { token != null }
                             replacement = send!!.pollResult
                             break@loop
                         }
@@ -216,7 +218,7 @@ internal open class ArrayChannel<E>(
                         }
                         failure is Closed<*> -> {
                             send = failure
-                            success = true
+                            token = failure.tryResumeSend(null)
                             replacement = failure
                             break@loop
                         }
@@ -238,8 +240,8 @@ internal open class ArrayChannel<E>(
             head = (head + 1) % buffer.size
         }
         // complete send the we're taken replacement from
-        if (success)
-            send!!.completeResumeSend()
+        if (token != null)
+            send!!.completeResumeSend(token!!)
         return result
     }
 
