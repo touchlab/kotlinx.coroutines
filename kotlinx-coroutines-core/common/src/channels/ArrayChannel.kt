@@ -65,7 +65,7 @@ internal open class ArrayChannel<E>(
                             this.size = size // restore size
                             return receive!!
                         }
-                        token = receive!!.tryResumeReceive(element, null)
+                        token = receive!!.tryResumeReceive(element, idempotent = null)
                         if (token != null) {
                             this.size = size // restore size
                             return@withLock
@@ -108,7 +108,6 @@ internal open class ArrayChannel<E>(
                                 return@withLock
                             }
                             failure === OFFER_FAILED -> break@loop // cannot offer -> Ok to queue to buffer
-                            failure === RETRY_ATOMIC -> {} // retry
                             failure === ALREADY_SELECTED || failure is Closed<*> -> {
                                 this.size = size // restore size
                                 return failure
@@ -118,7 +117,7 @@ internal open class ArrayChannel<E>(
                     }
                 }
                 // let's try to select sending this element to buffer
-                if (!select.trySelect()) { // :todo: move trySelect completion outside of lock
+                if (!select.trySelect(null)) { // :todo: move trySelect completion outside of lock
                     this.size = size // restore size
                     return ALREADY_SELECTED
                 }
@@ -164,7 +163,7 @@ internal open class ArrayChannel<E>(
             if (size == capacity) {
                 loop@ while (true) {
                     send = takeFirstSendOrPeekClosed() ?: break
-                    token = send!!.tryResumeSend(null)
+                    token = send!!.tryResumeSend(idempotent = null)
                     if (token != null) {
                         replacement = send!!.pollResult
                         break@loop
@@ -210,7 +209,6 @@ internal open class ArrayChannel<E>(
                             break@loop
                         }
                         failure === POLL_FAILED -> break@loop // cannot poll -> Ok to take from buffer
-                        failure === RETRY_ATOMIC -> {} // retry
                         failure === ALREADY_SELECTED -> {
                             this.size = size // restore size
                             buffer[head] = result // restore head
@@ -218,7 +216,7 @@ internal open class ArrayChannel<E>(
                         }
                         failure is Closed<*> -> {
                             send = failure
-                            token = failure.tryResumeSend(null)
+                            token = failure.tryResumeSend(idempotent = null)
                             replacement = failure
                             break@loop
                         }
@@ -231,7 +229,7 @@ internal open class ArrayChannel<E>(
                 buffer[(head + size) % buffer.size] = replacement
             } else {
                 // failed to poll or is already closed --> let's try to select receiving this element from buffer
-                if (!select.trySelect()) { // :todo: move trySelect completion outside of lock
+                if (!select.trySelect(null)) { // :todo: move trySelect completion outside of lock
                     this.size = size // restore size
                     buffer[head] = result // restore head
                     return ALREADY_SELECTED

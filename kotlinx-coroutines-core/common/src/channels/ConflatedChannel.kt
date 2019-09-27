@@ -4,8 +4,8 @@
 
 package kotlinx.coroutines.channels
 
-import kotlinx.coroutines.selects.*
 import kotlinx.coroutines.internal.*
+import kotlinx.coroutines.selects.*
 
 /**
  * Channel that buffers at most one element and conflates all subsequent `send` and `offer` invocations,
@@ -85,7 +85,6 @@ internal open class ConflatedChannel<E> : AbstractChannel<E>() {
                 result === ALREADY_SELECTED -> return ALREADY_SELECTED
                 result === OFFER_SUCCESS -> return OFFER_SUCCESS
                 result === OFFER_FAILED -> {} // retry
-                result === RETRY_ATOMIC -> {} // retry
                 result is Closed<*> -> return result
                 else -> error("Invalid result $result")
             }

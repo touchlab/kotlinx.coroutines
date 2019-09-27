@@ -4,8 +4,6 @@
 
 package kotlinx.coroutines.internal
 
-import kotlin.jvm.*
-
 /** @suppress **This is unstable API and it is subject to change.** */
 public expect open class LockFreeLinkedListNode() {
     public val isRemoved: Boolean
@@ -51,7 +49,7 @@ public expect open class AddLastDesc<T : LockFreeLinkedListNode>(
 ) : AbstractAtomicDesc {
     val queue: LockFreeLinkedListNode
     val node: T
-    override fun finishPrepare(prepareOp: PrepareOp)
+    protected override fun onPrepare(affected: LockFreeLinkedListNode, next: LockFreeLinkedListNode): Any?
     override fun finishOnSuccess(affected: LockFreeLinkedListNode, next: LockFreeLinkedListNode)
 }
 
@@ -59,7 +57,8 @@ public expect open class AddLastDesc<T : LockFreeLinkedListNode>(
 public expect open class RemoveFirstDesc<T>(queue: LockFreeLinkedListNode): AbstractAtomicDesc {
     val queue: LockFreeLinkedListNode
     public val result: T
-    override fun finishPrepare(prepareOp: PrepareOp)
+    protected open fun validatePrepared(node: T): Boolean
+    protected final override fun onPrepare(affected: LockFreeLinkedListNode, next: LockFreeLinkedListNode): Any?
     final override fun finishOnSuccess(affected: LockFreeLinkedListNode, next: LockFreeLinkedListNode)
 }
 
@@ -69,19 +68,6 @@ public expect abstract class AbstractAtomicDesc : AtomicDesc {
     final override fun complete(op: AtomicOp<*>, failure: Any?)
     protected open fun failure(affected: LockFreeLinkedListNode): Any?
     protected open fun retry(affected: LockFreeLinkedListNode, next: Any): Boolean
-    public abstract fun finishPrepare(prepareOp: PrepareOp) // non-null on failure
-    public open fun onPrepare(prepareOp: PrepareOp): Any? // non-null on failure
+    protected abstract fun onPrepare(affected: LockFreeLinkedListNode, next: LockFreeLinkedListNode): Any? // non-null on failure
     protected abstract fun finishOnSuccess(affected: LockFreeLinkedListNode, next: LockFreeLinkedListNode)
 }
-
-/** @suppress **This is unstable API and it is subject to change.** */
-public expect class PrepareOp: OpDescriptor {
-    val affected: LockFreeLinkedListNode
-    override val atomicOp: AtomicOp<*>
-    val desc: AbstractAtomicDesc
-    fun finishPrepare()
-}
-
-@JvmField
-@SharedImmutable
-internal val REMOVE_PREPARED: Any = Symbol("REMOVE_PREPARED")
