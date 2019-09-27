@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
+ * Copyright 2016-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
  */
 
 @file:Suppress("unused")
@@ -71,9 +71,8 @@ public class RecoverableTestCancellationException(message: String? = null) : Can
 public fun wrapperDispatcher(context: CoroutineContext): CoroutineContext {
     val dispatcher = context[ContinuationInterceptor] as CoroutineDispatcher
     return object : CoroutineDispatcher() {
-        override fun dispatch(context: CoroutineContext, block: Runnable) {
-            dispatcher.dispatch(context, block)
-        }
+        override fun isDispatchNeeded(context: CoroutineContext): Boolean = dispatcher.isDispatchNeeded(context)
+        override fun dispatch(context: CoroutineContext, block: Runnable) = dispatcher.dispatch(context, block)
     }
 }
 
