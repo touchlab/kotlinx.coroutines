@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
+ * Copyright 2016-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
  */
 
 @file:Suppress("PackageDirectoryMismatch")
@@ -9,7 +9,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.debug.*
 import kotlinx.coroutines.selects.*
 import org.junit.*
-import org.junit.Ignore
 import org.junit.Test
 import java.util.concurrent.*
 import kotlin.test.*
@@ -68,7 +67,7 @@ class SanitizedProbesTest : DebugTestBase() {
                     "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.access\$createActiveDeferred(SanitizedProbesTest.kt:16)\n" +
                     "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest\$testCoroutinesDump\$1.invokeSuspend(SanitizedProbesTest.kt:57)\n" +
                     "\tat kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:32)\n" +
-                    "\tat kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:237)\n" +
+                    "\tat kotlinx.coroutines.DispatchedTask.run(Dispatched.kt:237)\n" +
                     "\tat kotlinx.coroutines.TestBase.runTest\$default(TestBase.kt:141)\n" +
                     "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.testCoroutinesDump(SanitizedProbesTest.kt:56)"
         )
@@ -96,7 +95,7 @@ class SanitizedProbesTest : DebugTestBase() {
                 "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.access\$launchSelector(SanitizedProbesTest.kt:16)\n" +
                 "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest\$testSelectBuilder\$1.invokeSuspend(SanitizedProbesTest.kt:89)\n" +
                 "\tat kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:32)\n" +
-                "\tat kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:233)\n" +
+                "\tat kotlinx.coroutines.DispatchedTask.run(Dispatched.kt:233)\n" +
                 "\tat kotlinx.coroutines.TestBase.runTest\$default(TestBase.kt:154)\n" +
                 "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.testSelectBuilder(SanitizedProbesTest.kt:88)")
         finish(4)

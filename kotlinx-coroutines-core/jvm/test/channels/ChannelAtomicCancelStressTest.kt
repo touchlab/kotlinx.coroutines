@@ -58,6 +58,9 @@ class ChannelAtomicCancelStressTest(private val kind: TestChannelKind) : TestBas
     private inline fun cancellable(done: Channel<Boolean>, block: () -> Unit) {
         try {
             block()
+        } catch (e: Throwable) {
+            if (e !is CancellationException) fail(e)
+            throw e
         } finally {
             if (!done.offer(true))
                 fail(IllegalStateException("failed to offer to done channel"))
@@ -70,8 +73,9 @@ class ChannelAtomicCancelStressTest(private val kind: TestChannelKind) : TestBas
         val deadline = System.currentTimeMillis() + TEST_DURATION
         launchSender()
         launchReceiver()
+        val rnd = Random
         while (System.currentTimeMillis() < deadline && failed.get() == null) {
-            when (Random.nextInt(3)) {
+            when (rnd.nextInt(3)) {
                 0 -> { // cancel & restart sender
                     stopSender()
                     launchSender()
@@ -101,11 +105,12 @@ class ChannelAtomicCancelStressTest(private val kind: TestChannelKind) : TestBas
 
     private fun launchSender() {
         sender = scope.launch(start = CoroutineStart.ATOMIC) {
+            val rnd = Random
             cancellable(senderDone) {
                 var counter = 0
                 while (true) {
                     val trySend = lastSent + 1
-                    when (Random.nextInt(2)) {
+                    when (rnd.nextInt(2)) {
                         0 -> channel.send(trySend)
                         1 -> select { channel.onSend(trySend) {} }
                         else -> error("cannot happen")
@@ -130,9 +135,10 @@ class ChannelAtomicCancelStressTest(private val kind: TestChannelKind) : TestBas
 
     private fun launchReceiver() {
         receiver = scope.launch(start = CoroutineStart.ATOMIC) {
+            val rnd = Random
             cancellable(receiverDone) {
                 while (true) {
-                    val received = when (Random.nextInt(2)) {
+                    val received = when (rnd.nextInt(2)) {
                         0 -> channel.receive()
                         1 -> select { channel.onReceive { it } }
                         else -> error("cannot happen")

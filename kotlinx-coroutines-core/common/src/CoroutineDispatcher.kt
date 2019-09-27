@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
+ * Copyright 2016-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
  */
 
 package kotlinx.coroutines
@@ -100,11 +100,6 @@ public abstract class CoroutineDispatcher :
      */
     public final override fun <T> interceptContinuation(continuation: Continuation<T>): Continuation<T> =
         DispatchedContinuation(this, continuation)
-
-    @InternalCoroutinesApi
-    public override fun releaseInterceptedContinuation(continuation: Continuation<*>) {
-        (continuation as DispatchedContinuation<*>).reusableCancellableContinuation?.detachChild()
-    }
 
     /**
      * @suppress **Error**: Operator '+' on two CoroutineDispatcher objects is meaningless.

@@ -1,10 +1,13 @@
+/*
+ * Copyright 2016-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package kotlinx.coroutines.sync
 
 import kotlinx.atomicfu.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.internal.*
 import kotlin.coroutines.*
-import kotlin.jvm.*
 import kotlin.math.*
 
 /**
@@ -131,7 +134,7 @@ private class SemaphoreImpl(
         cur + 1
     }
 
-    private suspend fun addToQueueAndSuspend() = suspendAtomicCancellableCoroutineReusable<Unit> sc@ { cont ->
+    private suspend fun addToQueueAndSuspend() = suspendAtomicCancellableCoroutine<Unit> sc@ { cont ->
         val last = this.tail
         val enqIdx = enqIdx.getAndIncrement()
         val segment = getSegment(last, enqIdx / SEGMENT_SIZE)

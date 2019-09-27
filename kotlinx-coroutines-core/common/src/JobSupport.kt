@@ -1426,7 +1426,7 @@ internal class ChildContinuation(
     @JvmField val child: CancellableContinuationImpl<*>
 ) : JobCancellingNode<Job>(parent) {
     override fun invoke(cause: Throwable?) {
-        child.parentCancelled(child.getContinuationCancellationCause(job))
+        child.cancel(child.getContinuationCancellationCause(job))
     }
     override fun toString(): String =
         "ChildContinuation[$child]"
