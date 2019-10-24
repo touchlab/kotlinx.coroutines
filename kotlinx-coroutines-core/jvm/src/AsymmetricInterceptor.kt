@@ -52,15 +52,18 @@ abstract class AsymmetricKey<Base : CoroutineContext.Element, Element : Base>(
     }
 }
 
-
 abstract class Dispatcher : AsymmetricInterceptor {
     companion object Key : AsymmetricKey<AsymmetricInterceptor, Dispatcher>(AsymmetricInterceptor, Dispatcher::class)
+
+    fun dispatcher(): Dispatcher = this
 }
 
 class EventLoop2 : Dispatcher()
 
 class ExecutorDispatcher : Dispatcher() {
     companion object Key : AsymmetricKey<AsymmetricInterceptor, ExecutorDispatcher>(AsymmetricInterceptor, ExecutorDispatcher::class)
+
+    fun executor(): ExecutorDispatcher = this
 }
 
 class CustomInterceptor : AsymmetricInterceptor {
@@ -78,8 +81,8 @@ fun main() {
 fun sample1() {
     val ctx = CoroutineId(1) + EventLoop2()
     println(ctx[AsymmetricInterceptor]) // EL
-    println(ctx[Dispatcher]) // EL
-    println(ctx[ExecutorDispatcher]) // null
+    println(ctx[Dispatcher]?.dispatcher()) // EL
+    println(ctx[ExecutorDispatcher]?.executor()) // null
 
     // Validation
     require(ctx.size == 2)
@@ -95,8 +98,8 @@ fun sample2() {
     println()
     val ctx = CoroutineId(1) + ExecutorDispatcher()
     println(ctx[AsymmetricInterceptor]) // ED
-    println(ctx[Dispatcher]) // ED
-    println(ctx[ExecutorDispatcher]) // ED
+    println(ctx[Dispatcher]?.dispatcher()) // ED
+    println(ctx[ExecutorDispatcher]?.executor()) // ED
 
     // Validation
     require(ctx.size == 2)
@@ -113,8 +116,8 @@ fun sample3() {
     println()
     val ctx = CoroutineId(1) + CustomInterceptor()
     println(ctx[AsymmetricInterceptor]) // CI
-    println(ctx[Dispatcher]) // null
-    println(ctx[ExecutorDispatcher]) // null
+    println(ctx[Dispatcher]?.dispatcher()) // null
+    println(ctx[ExecutorDispatcher]?.executor()) // null
 
     // Validation
     require(ctx.size == 2)
