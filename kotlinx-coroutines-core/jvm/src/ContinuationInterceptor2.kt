@@ -5,14 +5,13 @@
 package kotlinx.coroutines
 
 import kotlin.coroutines.*
-import kotlin.reflect.*
 
 /**
  * Copy-paste of [ContinuationInterceptor] with adjusted get/minusKey
  */
-interface AsymmetricInterceptor : CoroutineContext.Element {
+interface ContinuationInterceptor2 : CoroutineContext.Element {
 
-    companion object Key : CoroutineContext.Key<AsymmetricInterceptor>
+    companion object Key : CoroutineContext.Key<ContinuationInterceptor2>
 
     override val key: CoroutineContext.Key<*>
         get() = Key
@@ -22,38 +21,33 @@ interface AsymmetricInterceptor : CoroutineContext.Element {
             return key.tryCast(this) as? E
         }
 
-        return if (key === AsymmetricInterceptor) this as E else null
+        return if (key === ContinuationInterceptor2) this as E else null
     }
 
     public override fun minusKey(key: CoroutineContext.Key<*>): CoroutineContext {
         if (key is AsymmetricKey<*, *>) {
             return if (key.isSubKey(this.key)) EmptyCoroutineContext else this
         }
-        return if (key === AsymmetricInterceptor) EmptyCoroutineContext else this
+        return if (key === ContinuationInterceptor2) EmptyCoroutineContext else this
     }
 }
 
 abstract class AsymmetricKey<Base : CoroutineContext.Element, Element : Base>(
-    private val baseKey: CoroutineContext.Key<Base>,
-    private val elementClass: KClass<Element>
+    baseKey: CoroutineContext.Key<Base>,
+    private val cast: (CoroutineContext.Element) -> Element?
 ) : CoroutineContext.Key<Element> {
 
-    fun tryCast(element: CoroutineContext.Element): Element? {
-        // NB: can be implemented in MPP manner without reflection
-        if (elementClass.java.isInstance(element)) {
-            return element as Element
-        }
-        return null
-    }
+    // To allow subclasses in type parameters, e.g. Key<Dispatcher, ExecutorDispatcher> instead of Key<ContinuationInterceptor, ExecutorDispatcher>
+    private val topMostKey: CoroutineContext.Key<*> =
+        if (baseKey is AsymmetricKey<*, *>) baseKey.topMostKey else baseKey
 
-    fun isSubKey(key: CoroutineContext.Key<*>): Boolean {
-        if (key === this) return true
-        return baseKey === key
-    }
+    fun tryCast(element: CoroutineContext.Element): Element? = cast(element)
+    fun isSubKey(key: CoroutineContext.Key<*>): Boolean = key === this || topMostKey === key
 }
 
-abstract class Dispatcher : AsymmetricInterceptor {
-    companion object Key : AsymmetricKey<AsymmetricInterceptor, Dispatcher>(AsymmetricInterceptor, Dispatcher::class)
+abstract class Dispatcher : ContinuationInterceptor2 {
+    companion object Key :
+        AsymmetricKey<ContinuationInterceptor2, Dispatcher>(ContinuationInterceptor2, { it as? Dispatcher })
 
     fun dispatcher(): Dispatcher = this
 }
@@ -61,14 +55,15 @@ abstract class Dispatcher : AsymmetricInterceptor {
 class EventLoop2 : Dispatcher()
 
 class ExecutorDispatcher : Dispatcher() {
-    companion object Key : AsymmetricKey<AsymmetricInterceptor, ExecutorDispatcher>(AsymmetricInterceptor, ExecutorDispatcher::class)
+    companion object Key :
+        AsymmetricKey<Dispatcher, ExecutorDispatcher>(Dispatcher, { it as? ExecutorDispatcher })
 
     fun executor(): ExecutorDispatcher = this
 }
 
-class CustomInterceptor : AsymmetricInterceptor {
+class CustomInterceptor : ContinuationInterceptor2 {
     override val key: CoroutineContext.Key<*>
-        get() = AsymmetricInterceptor
+        get() = ContinuationInterceptor2
 }
 
 
@@ -80,14 +75,14 @@ fun main() {
 
 fun sample1() {
     val ctx = CoroutineId(1) + EventLoop2()
-    println(ctx[AsymmetricInterceptor]) // EL
+    println(ctx[ContinuationInterceptor2]) // EL
     println(ctx[Dispatcher]?.dispatcher()) // EL
     println(ctx[ExecutorDispatcher]?.executor()) // null
 
     // Validation
     require(ctx.size == 2)
     require(ctx.minusKey(Dispatcher).size == 1)
-    require(ctx.minusKey(AsymmetricInterceptor).size == 1)
+    require(ctx.minusKey(ContinuationInterceptor2).size == 1)
     require(ctx.minusKey(ExecutorDispatcher).size == 2)
     require((ctx + EventLoop2()).size == 2)
     require((ctx + CustomInterceptor()).size == 2)
@@ -97,14 +92,14 @@ fun sample1() {
 fun sample2() {
     println()
     val ctx = CoroutineId(1) + ExecutorDispatcher()
-    println(ctx[AsymmetricInterceptor]) // ED
+    println(ctx[ContinuationInterceptor2]) // ED
     println(ctx[Dispatcher]?.dispatcher()) // ED
     println(ctx[ExecutorDispatcher]?.executor()) // ED
 
     // Validation
     require(ctx.size == 2)
     require(ctx.minusKey(Dispatcher).size == 1)
-    require(ctx.minusKey(AsymmetricInterceptor).size == 1)
+    require(ctx.minusKey(ContinuationInterceptor2).size == 1)
     require(ctx.minusKey(ExecutorDispatcher).size == 1)
     require((ctx + EventLoop2()).size == 2)
     require((ctx + CustomInterceptor()).size == 2)
@@ -115,14 +110,14 @@ fun sample2() {
 fun sample3() {
     println()
     val ctx = CoroutineId(1) + CustomInterceptor()
-    println(ctx[AsymmetricInterceptor]) // CI
+    println(ctx[ContinuationInterceptor2]) // CI
     println(ctx[Dispatcher]?.dispatcher()) // null
     println(ctx[ExecutorDispatcher]?.executor()) // null
 
     // Validation
     require(ctx.size == 2)
     require(ctx.minusKey(Dispatcher).size == 2)
-    require(ctx.minusKey(AsymmetricInterceptor).size == 1)
+    require(ctx.minusKey(ContinuationInterceptor2).size == 1)
     require(ctx.minusKey(ExecutorDispatcher).size == 2)
     require((ctx + EventLoop2()).size == 2)
     require((ctx + CustomInterceptor()).size == 2)
