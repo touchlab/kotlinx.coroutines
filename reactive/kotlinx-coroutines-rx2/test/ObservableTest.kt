@@ -143,9 +143,8 @@ class ObservableTest : TestBase() {
     @Test
     fun testExceptionAfterCancellation() {
         val wasCalled = AtomicBoolean(false)
-        val handler =  { e: Throwable ->
-            require(e !is CancellationException)
-            wasCalled.set(true)
+        val handler = { e: Throwable ->
+            assertFalse(e is CancellationException)
         }
         withExceptionHandler(handler) {
             RxJavaPlugins.setErrorHandler {
