@@ -20,8 +20,8 @@ import kotlin.internal.*
 /**
  * Creates cold reactive [Flux] that runs a given [block] in a coroutine.
  * Every time the returned flux is subscribed, it starts a new coroutine in the specified [context].
- * Coroutine [emits][Subscriber.onNext] values with `send`, [completes][Subscriber.onComplete]
- * when the coroutine completes or channel is explicitly closed and emits [error][Subscriber.onError]
+ * Coroutine emits ([Subscriber.onNext]) values with `send`, completes ([Subscriber.onComplete])
+ * when the coroutine completes or channel is explicitly closed and emits error ([Subscriber.onError])
  * if coroutine throws an exception or closes channel with a cause.
  * Unsubscribing cancels running coroutine.
  *

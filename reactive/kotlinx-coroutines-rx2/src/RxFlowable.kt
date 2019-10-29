@@ -17,8 +17,8 @@ import kotlin.internal.*
  * Creates cold [flowable][Flowable] that will run a given [block] in a coroutine.
  * Every time the returned flowable is subscribed, it starts a new coroutine.
  *
- * Coroutine [emits][ObservableEmitter.onNext] values with `send`, [completes][ObservableEmitter.onComplete]
- * when the coroutine completes or channel is explicitly closed and emits [error][ObservableEmitter.onError]
+ * Coroutine emits ([ObservableEmitter.onNext]) values with `send`, completes ([ObservableEmitter.onComplete])
+ * when the coroutine completes or channel is explicitly closed and emits error ([ObservableEmitter.onError])
  * if coroutine throws an exception or closes channel with a cause.
  * Unsubscribing cancels running coroutine.
  *

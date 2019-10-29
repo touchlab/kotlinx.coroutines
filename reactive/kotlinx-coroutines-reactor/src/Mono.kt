@@ -15,7 +15,7 @@ import kotlin.internal.*
 /**
  * Creates cold [mono][Mono] that will run a given [block] in a coroutine and emits its result.
  * Every time the returned mono is subscribed, it starts a new coroutine.
- * If [block] result is `null`, [success][MonoSink.success] is invoked without a value.
+ * If [block] result is `null`, [MonoSink.success] is invoked without a value.
  * Unsubscribing cancels running coroutine.
  *
  * Coroutine context can be specified with [context] argument.
