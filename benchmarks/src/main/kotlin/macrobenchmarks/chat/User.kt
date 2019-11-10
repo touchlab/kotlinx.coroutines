@@ -1,5 +1,10 @@
-package benchmarks.chat
+/*
+ * Copyright 2016-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
+ */
 
+package macrobenchmarks.chat
+
+import doGeomDistrWork
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -65,15 +70,6 @@ abstract class User(private val id: Long,
         }
     }
 
-    private fun doSomeWorkOnCpu() {
-        // We use geometric distribution here
-        val p = 1.0 / averageWork
-        val r = ThreadLocalRandom.current()
-        while (true) {
-            if (r.nextDouble() < p) break
-        }
-    }
-
     private suspend fun sendMessage() {
         val userChannelToSend = chooseUserToSend().messageChannel
         val now = System.nanoTime()
@@ -82,7 +78,7 @@ abstract class User(private val id: Long,
                 userChannelToSend.onSend(Message(id, now)) {
                     messagesToSent--
                     sentMessages++
-                    doSomeWorkOnCpu()
+                    doGeomDistrWork(averageWork)
                 }
                 messageChannel.onReceiveOrClosed { message ->
                     if (!message.isClosed) {
@@ -98,7 +94,7 @@ abstract class User(private val id: Long,
     private fun receiveAndProcessMessage(message: Message) {
         messagesToSent += activity
         receivedMessages++
-        doSomeWorkOnCpu()
+        doGeomDistrWork(averageWork)
     }
 
     fun stopUser() {
