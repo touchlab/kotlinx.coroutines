@@ -400,12 +400,12 @@ internal open class CancellableContinuationImpl<in T>(
     }
 
     override fun CoroutineDispatcher.resumeUndispatched(value: T) {
-        val dc = delegate.asLocal() as? DispatchedContinuation
+        val dc = delegate.asLocalOrNullIfNotUsed() as? DispatchedContinuation
         resumeImpl(value, if (dc?.dispatcher === this) MODE_UNDISPATCHED else resumeMode)
     }
 
     override fun CoroutineDispatcher.resumeUndispatchedWithException(exception: Throwable) {
-        val dc = delegate.asLocal() as? DispatchedContinuation
+        val dc = delegate.asLocalOrNullIfNotUsed() as? DispatchedContinuation
         resumeImpl(CompletedExceptionally(exception), if (dc?.dispatcher === this) MODE_UNDISPATCHED else resumeMode)
     }
 

@@ -11,9 +11,19 @@ import kotlin.coroutines.*
 import kotlin.coroutines.intrinsics.*
 import kotlin.native.concurrent.*
 
-internal actual fun DisposableHandle.asShareable(): DisposableHandle = when (this) {
-    is ShareableDisposableHandle -> this
-    else -> ShareableDisposableHandle(this)
+internal actual open class ShareableRefHolder {
+    internal var shareable: ShareableObject<*>? = null // cached result of asShareable call
+}
+
+@Suppress("NOTHING_TO_INLINE") // Should be NOP
+internal actual fun ShareableRefHolder.disposeSharedRef() {
+    shareable?.disposeRef()
+}
+
+@Suppress("NOTHING_TO_INLINE") // Should be NOP
+internal actual fun <T> T.asShareable(): DisposableHandle where T : DisposableHandle, T : ShareableRefHolder {
+    shareable?.let { return it as DisposableHandle }
+    return ShareableDisposableHandle(this).also { shareable = it }
 }
 
 internal actual fun CoroutineDispatcher.asShareable(): CoroutineDispatcher = when (this) {
@@ -33,6 +43,11 @@ internal actual fun <T> Continuation<T>.asLocal() : Continuation<T> = when (this
 
 internal actual fun <T> Continuation<T>.asLocalOrNull() : Continuation<T>? = when (this) {
     is ShareableContinuation -> localRefOrNull()
+    else -> this
+}
+
+internal actual fun <T> Continuation<T>.asLocalOrNullIfNotUsed() : Continuation<T>? = when (this) {
+    is ShareableContinuation -> localRefOrNullIfNotUsed()
     else -> this
 }
 
@@ -90,31 +105,51 @@ internal actual inline fun <T> ArrayList<T>.addOrUpdate(index: Int, element: T, 
     }
 }
 
-private open class ShareableObject<T : Any>(obj: T) {
+internal open class ShareableObject<T : Any>(obj: T) {
     val thread: Thread = currentThread()
 
     // todo: this is best effort (fail-fast) double-dispose protection, does not provide memory safety guarantee
     private val _ref = atomic<StableRef<T>?>(StableRef.create(obj))
 
     fun localRef(): T {
-        val current = currentThread()
-        if (current != thread) error("Can be used only from thread $thread but now in $current")
-        val ref = _ref.value ?: error("Ref was already used")
+        checkThread()
+        val ref = _ref.value ?: wasUsed()
         return ref.get()
     }
 
     fun localRefOrNull(): T? {
         val current = currentThread()
         if (current != thread) return null
-        val ref = _ref.value ?: error("Ref was already used")
+        val ref = _ref.value ?: wasUsed()
+        return ref.get()
+    }
+
+    fun localRefOrNullIfNotUsed(): T? {
+        val current = currentThread()
+        if (current != thread) return null
+        val ref = _ref.value ?: return null
         return ref.get()
     }
 
     fun useRef(): T {
-        val current = currentThread()
-        if (current != thread) error("Can be used only from $thread but now in $current")
-        val ref = _ref.getAndSet(null) ?: error("Ref was already used")
+        checkThread()
+        val ref = _ref.getAndSet(null) ?: wasUsed()
         return ref.get().also { ref.dispose() }
+    }
+
+    fun disposeRef(): T? {
+        checkThread()
+        val ref = _ref.getAndSet(null) ?: return null
+        return ref.get().also { ref.dispose() }
+    }
+
+    private fun checkThread() {
+        val current = currentThread()
+        if (current != thread) error("Ref $classSimpleName@$hexAddress can be used only from thread $thread but now in $current")
+    }
+
+    private fun wasUsed(): Nothing {
+        error("Ref $classSimpleName@$hexAddress was already used")
     }
 
     override fun toString(): String =
@@ -142,10 +177,10 @@ private class ShareableDisposableHandle(
 ) : ShareableObject<DisposableHandle>(handle), DisposableHandle {
     override fun dispose() {
         if (currentThread() == thread) {
-            useRef().dispose()
+            disposeRef()?.dispose()
         } else {
             thread.execute {
-                useRef().dispose()
+                disposeRef()?.dispose()
             }
         }
     }

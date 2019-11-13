@@ -7,11 +7,14 @@ package kotlinx.coroutines.internal
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
 
-internal expect fun DisposableHandle.asShareable(): DisposableHandle
+internal expect open class ShareableRefHolder()
+internal expect fun ShareableRefHolder.disposeSharedRef()
+internal expect fun <T> T.asShareable(): DisposableHandle where T : DisposableHandle, T : ShareableRefHolder
 internal expect fun CoroutineDispatcher.asShareable(): CoroutineDispatcher
 internal expect fun <T> Continuation<T>.asShareable() : Continuation<T>
 internal expect fun <T> Continuation<T>.asLocal() : Continuation<T>
 internal expect fun <T> Continuation<T>.asLocalOrNull() : Continuation<T>?
+internal expect fun <T> Continuation<T>.asLocalOrNullIfNotUsed() : Continuation<T>?
 internal expect fun <T> Continuation<T>.useLocal() : Continuation<T>
 internal expect fun <T> Continuation<T>.shareableInterceptedResumeCancellableWith(result: Result<T>)
 internal expect fun <T> CancellableContinuationImpl<T>.shareableResume(delegate: Continuation<T>, useMode: Int)

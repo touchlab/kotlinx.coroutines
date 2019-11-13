@@ -11,9 +11,16 @@ import kotlin.coroutines.*
 import kotlin.coroutines.intrinsics.*
 import kotlin.internal.InlineOnly
 
+@Suppress("ACTUAL_WITHOUT_EXPECT") // visibility different
+internal actual typealias ShareableRefHolder = Any
+
 @InlineOnly
 @Suppress("NOTHING_TO_INLINE") // Should be NOP
-internal actual inline fun DisposableHandle.asShareable(): DisposableHandle = this
+internal actual fun ShareableRefHolder.disposeSharedRef() {}
+
+@InlineOnly
+@Suppress("NOTHING_TO_INLINE") // Should be NOP
+internal actual fun <T> T.asShareable(): DisposableHandle where T : DisposableHandle, T : ShareableRefHolder = this
 
 @InlineOnly
 @Suppress("NOTHING_TO_INLINE") // Should be NOP
@@ -30,6 +37,10 @@ internal actual inline fun <T> Continuation<T>.asLocal() : Continuation<T> = thi
 @InlineOnly
 @Suppress("NOTHING_TO_INLINE") // Should be NOP
 internal actual inline fun <T> Continuation<T>.asLocalOrNull() : Continuation<T>? = this
+
+@InlineOnly
+@Suppress("NOTHING_TO_INLINE") // Should be NOP
+internal actual fun <T> Continuation<T>.asLocalOrNullIfNotUsed() : Continuation<T>? = this
 
 @InlineOnly
 @Suppress("NOTHING_TO_INLINE") // Should be NOP
