@@ -557,7 +557,7 @@ public actual open class LockFreeLinkedListNode {
             // See detailed comment in findHead on why `prev === this` is a special case for which we know that
             // the prev should have being pointing to the head of list but finishAdd that was supposed
             // to do that is not complete yet.
-            val removedPrev = (if (prev === this) findHead() else (prev as Node)).removed()
+            val removedPrev = (if (prev === this) findHead() else (prev as Node))?.removed()
             if (_prev.compareAndSet(prev, removedPrev)) return prev
         }
     }
@@ -584,11 +584,11 @@ public actual open class LockFreeLinkedListNode {
      * has not completed yet. If this state is observed, then we know that [prev] should have been pointing
      * to the list head. This function is looking up the head by following consistent chain of [next] pointers.
      */
-    private fun findHead(): Node {
+    private fun findHead(): Node? {
         var cur = this
         while (true) {
             if (cur is LockFreeLinkedListHead) return cur
-            cur = cur.nextNode
+            cur = cur.nextNode ?: return null // it could have been unlinked on Kotlin/Native
             assert { cur !== this } // "Cannot loop to this while looking for list head"
         }
     }

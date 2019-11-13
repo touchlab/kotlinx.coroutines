@@ -590,7 +590,10 @@ public open class JobSupport constructor(active: Boolean) : Job, ChildJob, Paren
                 is JobNode<*> -> { // SINGE/SINGLE+ state -- one completion handler
                     if (state !== node) return // a different job node --> we were already removed
                     // try remove and revert back to empty state
-                    if (_state.compareAndSet(state, EMPTY_ACTIVE)) return
+                    if (_state.compareAndSet(state, EMPTY_ACTIVE)) {
+                        disposeLockFreeLinkedList { state }
+                        return
+                    }
                 }
                 is Incomplete -> { // may have a list of completion handlers
                     // remove node from the list if there is a list
