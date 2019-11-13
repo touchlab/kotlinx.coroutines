@@ -19,6 +19,8 @@ internal fun currentThread(): Thread = currentThread
 
 internal expect fun initCurrentThread(): Thread
 
+internal expect inline fun workerMain(block: () -> Unit)
+
 internal fun Worker.execute(block: () -> Unit) {
     block.freeze()
     executeAfter(0, block)

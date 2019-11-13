@@ -9,6 +9,7 @@ import kotlin.native.concurrent.*
 import kotlinx.atomicfu.*
 import platform.CoreFoundation.*
 import kotlin.native.SharedImmutable
+import kotlinx.cinterop.autoreleasepool
 
 /**
  * Initializes the main thread. Must be called from the main thread if the application's interaction
@@ -21,6 +22,12 @@ public fun initMainThread() {
 
 internal actual fun initCurrentThread(): Thread =
     if (isMainThread()) mainThread else WorkerThread()
+
+internal actual inline fun workerMain(block: () -> Unit) {
+    autoreleasepool {
+        block()
+    }
+}
 
 @SharedImmutable
 private val _mainThread = AtomicReference<MainThread?>(null)
@@ -55,7 +62,7 @@ internal class MainThread : WorkerThread() {
 
     fun shutdown() {
         // Cleanup posted processQueueBlock
-        dispatch_async(dispatch_get_main_queue()) {
+        execute {
             CFRunLoopStop(CFRunLoopGetCurrent())
         }
         CFRunLoopRun()

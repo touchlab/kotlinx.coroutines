@@ -4,6 +4,6 @@
 
 package kotlinx.coroutines
 
-import kotlin.native.concurrent.*
-
 internal actual fun initCurrentThread(): Thread = WorkerThread()
+
+internal actual inline fun workerMain(block: () -> Unit) = block()

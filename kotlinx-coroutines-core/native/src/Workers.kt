@@ -29,7 +29,9 @@ private class WorkerCoroutineDispatcherImpl(name: String) : SingleThreadDispatch
 
     fun start() {
         worker.execute {
-            runEventLoop(ThreadLocalEventLoop.eventLoop) { isClosed.value }
+            workerMain {
+                runEventLoop(ThreadLocalEventLoop.eventLoop) { isClosed.value }
+            }
         }
     }
 
