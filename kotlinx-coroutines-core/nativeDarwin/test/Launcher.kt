@@ -23,6 +23,8 @@ fun mainBackground(args: Array<String>) {
 
 // This is a separate entry point for tests with leak checker
 fun mainNoExit(args: Array<String>) {
-    testLauncherEntryPoint(args)
-    mainThread.shutdown()
+    workerMain { // autoreleasepool to make sure interop objects are properly freed
+        testLauncherEntryPoint(args)
+        mainThread.shutdown()
+    }
 }
