@@ -75,7 +75,8 @@ private class Timer : DisposableHandle {
 
     fun start(timeMillis: Long, timerBlock: TimerBlock) {
         val fireDate = CFAbsoluteTimeGetCurrent() + timeMillis / 1000.0
-        val timer = CFRunLoopTimerCreateWithHandler(null, fireDate, 0.0, 0uL, 0, timerBlock)
+        @Suppress("EXPERIMENTAL_UNSIGNED_LITERALS")
+        val timer = CFRunLoopTimerCreateWithHandler(null, fireDate, 0.0, 0u, 0, timerBlock)
         CFRunLoopAddTimer(CFRunLoopGetMain(), timer, kCFRunLoopCommonModes)
         if (!ref.compareAndSet(TIMER_NEW, timer.rawValue)) {
             // dispose was already called concurrently
