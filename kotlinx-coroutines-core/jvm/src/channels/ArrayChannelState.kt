@@ -6,19 +6,9 @@ package kotlinx.coroutines.channels
 
 import kotlin.math.*
 
-internal actual class ArrayChannelState actual constructor(initialBufferSize: Int) {
-    private var buffer: Array<Any?> = arrayOfNulls<Any?>(initialBufferSize)
-
+internal actual class ArrayChannelState actual constructor(initialBufferSize: Int) : ArrayBufferState(initialBufferSize) {
     actual var head = 0
     actual var size = 0
-    actual val bufferSize: Int get() = buffer.size
-
-    actual fun getBufferAt(index: Int): Any? =
-        buffer[index]
-
-    actual fun setBufferAt(index: Int, value: Any?) {
-        buffer[index] = value
-    }
 
     actual fun ensureCapacity(currentSize: Int, capacity: Int) {
         if (currentSize < buffer.size) return
@@ -30,9 +20,4 @@ internal actual class ArrayChannelState actual constructor(initialBufferSize: In
         buffer = newBuffer
         head = 0
     }
-
-    actual inline fun <T> withLock(block: ArrayChannelState.() -> T): T =
-        synchronized(this) {
-            block()
-        }
 }

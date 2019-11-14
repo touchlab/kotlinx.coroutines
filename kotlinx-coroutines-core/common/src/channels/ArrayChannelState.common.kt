@@ -4,14 +4,9 @@
 
 package kotlinx.coroutines.channels
 
-internal expect class ArrayChannelState(initialBufferSize: Int) {
+internal expect class ArrayChannelState(initialBufferSize: Int) : ArrayBufferState {
     var head: Int
     var size: Int // Invariant: size <= capacity
-    val bufferSize: Int
 
-    fun getBufferAt(index: Int): Any?
-    fun setBufferAt(index: Int, value: Any?)
     fun ensureCapacity(currentSize: Int, capacity: Int)
-
-    inline fun <T> withLock(block: ArrayChannelState.() -> T): T
 }

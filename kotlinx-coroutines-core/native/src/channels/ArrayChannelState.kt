@@ -5,14 +5,12 @@
 package kotlinx.coroutines.channels
 
 import kotlinx.atomicfu.*
-import kotlinx.coroutines.internal.*
+import kotlinx.atomicfu.locks.*
 import kotlin.math.*
 
-internal actual class ArrayChannelState actual constructor(initialBufferSize: Int)  : SynchronizedObject() {
-    private val _buffer = atomic(atomicArrayOfNulls<Any?>(initialBufferSize))
+internal actual class ArrayChannelState actual constructor(initialBufferSize: Int)  : ArrayBufferState(initialBufferSize) {
     private val _head = atomic(0)
     private val _size = atomic(0)
-    private val _bufferSize = atomic(initialBufferSize)
 
     actual var head: Int
         get() = _head.value
@@ -21,16 +19,6 @@ internal actual class ArrayChannelState actual constructor(initialBufferSize: In
     actual var size: Int
         get() = _size.value
         set(value) { _size.value = value }
-
-    actual val bufferSize: Int
-        get() = _bufferSize.value
-
-    actual fun getBufferAt(index: Int): Any? =
-        _buffer.value[index].value
-
-    actual fun setBufferAt(index: Int, value: Any?) {
-        _buffer.value[index].value = value
-    }
 
     actual fun ensureCapacity(currentSize: Int, capacity: Int) {
         if (currentSize < bufferSize) return
@@ -43,9 +31,4 @@ internal actual class ArrayChannelState actual constructor(initialBufferSize: In
         _bufferSize.value = newSize
         head = 0
     }
-
-    actual inline fun <T> withLock(block: ArrayChannelState.() -> T): T =
-        synchronized(this) {
-            block()
-        }
 }

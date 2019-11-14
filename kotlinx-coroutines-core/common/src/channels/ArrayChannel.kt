@@ -34,37 +34,37 @@ internal open class ArrayChannel<E>(
     private val state = ArrayChannelState(min(capacity, 8))
 
     protected final override val isBufferAlwaysEmpty: Boolean get() = false
-    protected final override val isBufferEmpty: Boolean get() = state.withLock { size == 0 }
+    protected final override val isBufferEmpty: Boolean get() = state.withLock { state.size == 0 }
     protected final override val isBufferAlwaysFull: Boolean get() = false
-    protected final override val isBufferFull: Boolean get() = state.withLock { size == capacity }
+    protected final override val isBufferFull: Boolean get() = state.withLock { state.size == capacity }
 
     // result is `OFFER_SUCCESS | OFFER_FAILED | Closed`
     protected override fun offerInternal(element: E): Any {
         var receive: ReceiveOrClosed<E>? = null
         state.withLock {
-            val size = this.size
+            val size = state.size
             closedForSend?.let { return it }
             if (size < capacity) {
                 // tentatively put element to buffer
-                this.size = size + 1 // update size before checking queue (!!!)
+                state.size = size + 1 // update size before checking queue (!!!)
                 // check for receivers that were waiting on empty queue
                 if (size == 0) {
                     loop@ while (true) {
                         receive = takeFirstReceiveOrPeekClosed() ?: break@loop // break when no receivers queued
                         if (receive is Closed) {
-                            this.size = size // restore size
+                            state.size = size // restore size
                             return receive!!
                         }
                         val token = receive!!.tryResumeReceive(element, null)
                         if (token != null) {
                             assert { token === RESUME_TOKEN }
-                            this.size = size // restore size
+                            state.size = size // restore size
                             return@withLock
                         }
                     }
                 }
-                ensureCapacity(size, capacity)
-                setBufferAt((head + size) % bufferSize, element) // actually queue element
+                state.ensureCapacity(size, capacity)
+                state.setBufferAt((state.head + size) % state.bufferSize, element) // actually queue element
                 return OFFER_SUCCESS
             }
             // size == capacity: full
@@ -79,11 +79,11 @@ internal open class ArrayChannel<E>(
     protected override fun offerSelectInternal(element: E, select: SelectInstance<*>): Any {
         var receive: ReceiveOrClosed<E>? = null
         state.withLock {
-            val size = this.size
+            val size = state.size
             closedForSend?.let { return it }
             if (size < capacity) {
                 // tentatively put element to buffer
-                this.size = size + 1 // update size before checking queue (!!!)
+                state.size = size + 1 // update size before checking queue (!!!)
                 // check for receivers that were waiting on empty queue
                 if (size == 0) {
                     loop@ while (true) {
@@ -91,14 +91,14 @@ internal open class ArrayChannel<E>(
                         val failure = select.performAtomicTrySelect(offerOp)
                         when {
                             failure == null -> { // offered successfully
-                                this.size = size // restore size
+                                state.size = size // restore size
                                 receive = offerOp.result
                                 return@withLock
                             }
                             failure === OFFER_FAILED -> break@loop // cannot offer -> Ok to queue to buffer
                             failure === RETRY_ATOMIC -> {} // retry
                             failure === ALREADY_SELECTED || failure is Closed<*> -> {
-                                this.size = size // restore size
+                                state.size = size // restore size
                                 return failure
                             }
                             else -> error("performAtomicTrySelect(describeTryOffer) returned $failure")
@@ -107,11 +107,11 @@ internal open class ArrayChannel<E>(
                 }
                 // let's try to select sending this element to buffer
                 if (!select.trySelect()) { // :todo: move trySelect completion outside of lock
-                    this.size = size // restore size
+                    state.size = size // restore size
                     return ALREADY_SELECTED
                 }
-                ensureCapacity(size, capacity)
-                setBufferAt((head + size) % bufferSize, element) // actually queue element
+                state.ensureCapacity(size, capacity)
+                state.setBufferAt((state.head + size) % state.bufferSize, element) // actually queue element
                 return OFFER_SUCCESS
             }
             // size == capacity: full
@@ -128,12 +128,12 @@ internal open class ArrayChannel<E>(
         var resumed = false
         var result: Any? = null
         state.withLock {
-            val size = this.size
+            val size = state.size
             if (size == 0) return closedForSend ?: POLL_FAILED // when nothing can be read from buffer
             // size > 0: not empty -- retrieve element
-            result = getBufferAt(head)
-            setBufferAt(head, null)
-            this.size = size - 1 // update size before checking queue (!!!)
+            result = state.getBufferAt(state.head)
+            state.setBufferAt(state.head, null)
+            state.size = size - 1 // update size before checking queue (!!!)
             // check for senders that were waiting on full queue
             var replacement: Any? = POLL_FAILED
             if (size == capacity) {
@@ -149,10 +149,10 @@ internal open class ArrayChannel<E>(
                 }
             }
             if (replacement !== POLL_FAILED && replacement !is Closed<*>) {
-                this.size = size // restore size
-                setBufferAt((head + size) % bufferSize, replacement)
+                state.size = size // restore size
+                state.setBufferAt((state.head + size) % state.bufferSize, replacement)
             }
-            head = (head + 1) % bufferSize
+            state.head = (state.head + 1) % state.bufferSize
         }
         // complete send the we're taken replacement from
         if (resumed)
@@ -166,12 +166,12 @@ internal open class ArrayChannel<E>(
         var success = false
         var result: Any? = null
         state.withLock {
-            val size = this.size
+            val size = state.size
             if (size == 0) return closedForSend ?: POLL_FAILED
             // size > 0: not empty -- retrieve element
-            result = getBufferAt(head)
-            setBufferAt(head, null)
-            this.size = size - 1 // update size before checking queue (!!!)
+            result = state.getBufferAt(state.head)
+            state.setBufferAt(state.head, null)
+            state.size = size - 1 // update size before checking queue (!!!)
             // check for senders that were waiting on full queue
             var replacement: Any? = POLL_FAILED
             if (size == capacity) {
@@ -188,8 +188,8 @@ internal open class ArrayChannel<E>(
                         failure === POLL_FAILED -> break@loop // cannot poll -> Ok to take from buffer
                         failure === RETRY_ATOMIC -> {} // retry
                         failure === ALREADY_SELECTED -> {
-                            this.size = size // restore size
-                            setBufferAt(head, result) // restore head
+                            state.size = size // restore size
+                            state.setBufferAt(state.head, result) // restore head
                             return failure
                         }
                         failure is Closed<*> -> {
@@ -203,17 +203,17 @@ internal open class ArrayChannel<E>(
                 }
             }
             if (replacement !== POLL_FAILED && replacement !is Closed<*>) {
-                this.size = size // restore size
-                setBufferAt((head + size) % bufferSize, replacement)
+                state.size = size // restore size
+                state.setBufferAt((state.head + size) % state.bufferSize, replacement)
             } else {
                 // failed to poll or is already closed --> let's try to select receiving this element from buffer
                 if (!select.trySelect()) { // :todo: move trySelect completion outside of lock
-                    this.size = size // restore size
-                    setBufferAt(head, result) // restore head
+                    state.size = size // restore size
+                    state.setBufferAt(state.head, result) // restore head
                     return ALREADY_SELECTED
                 }
             }
-            head = (head + 1) % bufferSize
+            state.head = (state.head + 1) % state.bufferSize
         }
         // complete send the we're taken replacement from
         if (success)
@@ -226,11 +226,11 @@ internal open class ArrayChannel<E>(
         // clear buffer first, but do not wait for it in helpers
         if (wasClosed) {
             state.withLock {
-                repeat(size) {
-                    setBufferAt(head, null)
-                    head = (head + 1) % bufferSize
+                repeat(state.size) {
+                    state.setBufferAt(state.head, null)
+                    state.head = (state.head + 1) % state.bufferSize
                 }
-                size = 0
+                state.size = 0
             }
         }
         // then clean all queued senders
@@ -240,5 +240,7 @@ internal open class ArrayChannel<E>(
     // ------ debug ------
 
     override val bufferDebugString: String
-        get() = state.withLock { "(buffer:capacity=$capacity,size=$size)" }
+        get() = state.withLock {
+            "(buffer:capacity=$capacity,size=${state.size})"
+        }
 }

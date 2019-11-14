@@ -123,6 +123,28 @@ class WorkerDispatcherTest : TestBase() {
     }
 
     @Test
+    fun testArrayBroadcast() = runTest {
+        expect(1)
+        val broadcast = BroadcastChannel<Data>(10)
+        val sub = broadcast.openSubscription()
+        launch(dispatcher) {
+            assertEquals(dispatcher.thread, currentThread())
+            expect(2)
+            broadcast.send(Data("A"))
+            broadcast.send(Data("B"))
+        }
+        val result1 = sub.receive()
+        expect(3)
+        assertEquals(mainThread, currentThread())
+        assertEquals("A", result1.s)
+        assertTrue(result1.isFrozen)
+        val result2 = sub.receive()
+        assertEquals("B", result2.s)
+        sub.cancel()
+        finish(4)
+    }
+
+    @Test
     fun testFlowOn() = runTest {
         expect(1)
         val flow = flow {

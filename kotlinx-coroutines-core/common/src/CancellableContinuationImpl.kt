@@ -163,7 +163,8 @@ internal open class CancellableContinuationImpl<in T>(
      */
     private fun cancelLater(cause: Throwable): Boolean {
         if (resumeMode != MODE_ATOMIC_DEFAULT) return false
-        val dispatched = (delegate.asLocal() as? DispatchedContinuation<*>) ?: return false
+        // On Kotlin/Native reuse is not supported, so delegate is never DispatchedContinuation and false is returned
+        val dispatched = (delegate as? DispatchedContinuation<*>) ?: return false
         return dispatched.postponeCancellation(cause)
     }
 
