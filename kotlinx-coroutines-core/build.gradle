@@ -87,7 +87,7 @@ task jvmStressTest(type: Test, dependsOn: compileTestKotlinJvm) {
     classpath = files { jvmTest.classpath }
     testClassesDirs = files { jvmTest.testClassesDirs }
     minHeapSize = '1g'
-    maxHeapSize = '1g'
+    maxHeapSize = '10g'
     include '**/*StressTest.*'
     enableAssertions = true
     testLogging.showStandardStreams = true
