@@ -5,15 +5,10 @@
 package macrobenchmarks.chat
 
 import doGeomDistrWork
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ClosedSendChannelException
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.selects.select
-import kotlinx.coroutines.yield
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.selects.*
 import java.util.*
-import java.util.concurrent.ThreadLocalRandom
 
 /**
  * An abstract class for server-side chat users.
