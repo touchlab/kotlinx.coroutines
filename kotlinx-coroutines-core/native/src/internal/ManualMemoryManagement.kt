@@ -10,8 +10,8 @@ internal actual inline fun disposeLockFreeLinkedList(list: () -> LockFreeLinkedL
     val head = list() ?: return
     var cur = head
     do {
-        val next = cur.nextNode
-        val last = next === head
+        val next = cur.nextNode // returns cur when already unlinked last node
+        val last = next === head || next === cur
         cur.unlinkRefs(last)
         cur = next
     } while (!last)

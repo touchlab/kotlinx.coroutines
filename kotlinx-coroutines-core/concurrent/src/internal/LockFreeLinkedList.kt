@@ -168,7 +168,8 @@ public actual open class LockFreeLinkedListNode {
 
     public actual inline fun addLastIfPrev(node: Node, predicate: (Node) -> Boolean): Boolean {
         while (true) { // lock-free loop on prev.next
-            val prev = prev as Node // sentinel node is never removed, so prev is always defined
+            // sentinel node is never removed, so prev is always defined, but can be unlinked on Kotlin/Native
+            val prev = prev as Node? ?: return false
             if (!predicate(prev)) return false
             if (prev.addNext(node, this)) return true
         }
@@ -181,7 +182,8 @@ public actual open class LockFreeLinkedListNode {
     ): Boolean {
         val condAdd = makeCondAddOp(node, condition)
         while (true) { // lock-free loop on prev.next
-            val prev = prev as Node // sentinel node is never removed, so prev is always defined
+            // sentinel node is never removed, so prev is always defined, but can be unlinked on Kotlin/Native
+            val prev = prev as Node? ?: return false
             if (!predicate(prev)) return false
             when (prev.tryCondAddNext(node, this, condAdd)) {
                 SUCCESS -> return true
@@ -261,7 +263,8 @@ public actual open class LockFreeLinkedListNode {
     }
 
     public actual fun helpRemove() {
-        val removed = this.next as? Removed ?: error("Must be invoked on a removed node")
+        val next = this.next ?: return // unlinked node on Kotlin/Native
+        val removed = next as? Removed ?: error("Must be invoked on a removed node")
         finishRemove(removed.ref)
     }
 
@@ -380,8 +383,8 @@ public actual open class LockFreeLinkedListNode {
         final override val originalNext: Node? get() = _originalNext.value
 
         // check node predicates here, must signal failure if affect is not of type T
-        protected override fun failure(affected: Node): Any? =
-                if (affected === queue) LIST_EMPTY else null
+        protected override fun failure(affected: Node?): Any? =
+                if (affected === queue || affected == null) LIST_EMPTY else null // must fail on null for unlinked nodes on K/N
 
         final override fun retry(affected: Node, next: Any): Boolean {
             if (next !is Removed) return false
@@ -444,7 +447,7 @@ public actual open class LockFreeLinkedListNode {
         protected abstract val affectedNode: Node?
         protected abstract val originalNext: Node?
         protected open fun takeAffectedNode(op: OpDescriptor): Node? = affectedNode!! // null for RETRY_ATOMIC
-        protected open fun failure(affected: Node): Any? = null // next: Node | Removed
+        protected open fun failure(affected: Node?): Any? = null // next: Node | Removed  // must fail on null for unlinked nodes on K/N
         protected open fun retry(affected: Node, next: Any): Boolean = false // next: Node | Removed
         protected abstract fun updatedNext(affected: Node, next: Node): Any
         protected abstract fun finishOnSuccess(affected: Node, next: Node)
@@ -474,10 +477,11 @@ public actual open class LockFreeLinkedListNode {
                     next.perform(affected)
                     continue // and retry
                 }
+                // on Kotlin/Native next can be already unlinked
                 // next: Node | Removed
-                next as Any
-                val failure = failure(affected)
+                val failure = failure(affected) // must fail on null for unlinked nodes on K/N
                 if (failure != null) return failure // signal failure
+                next as Any // should have failed if was null
                 if (retry(affected, next)) continue // retry operation
                 val prepareOp = PrepareOp(affected, next as Node, this)
                 if (affected._next.compareAndSet(next, prepareOp)) {
