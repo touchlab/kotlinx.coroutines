@@ -27,7 +27,8 @@ For interoperability with code that is using Kotlin/Native
 [Worker](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.native.concurrent/-worker/index.html)
 API you can get a reference to single-threaded dispacher's worker using its [SingleThreadDispatcher.worker] property.
 
-A [Default][Dispatchers.Default] dispatcher on Kotlin/Native contains a single background thread. 
+A [Default][Dispatchers.Default] dispatcher on Kotlin/Native contains a single background thread.
+This is the dispatcher that used by default in [GlobalScope]. 
 There is currently no background thread-pool like on JVM. A [Main][Dispatchers.Main] dispatcher is
 properly defined for all Darwin (Apple) targets, refers to the main thread, and integrates
 with Core Foundation main event loop. 
@@ -94,6 +95,26 @@ Note, that if you protect any piece of mutable data with a [Mutex] or a [Semapho
 automatically become shareable. In order to share mutable data you have to either 
 wrap it into [DetachedObjectGraph](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.native.concurrent/-detached-object-graph/index.html)  
 or use atomic classes ([AtomicInt](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.native.concurrent/-atomic-int/index.html), etc).
+
+## Cyclic garbage
+
+Code working in a single thread on Kotlin/Native enjoys fully automatic memory management. Any object graph that
+is not referenced anymore is automatically reclaimed even if it contains cyclic chains of references. This does
+not extend to shared objects, though. Frozen immutable objects can be freely shared, even if then can contain
+reference cycles, but shareable [communication objects][#communication-objects] leak if a reference cycle
+to them appears. The easiest way to demonstrate it is to return a reference to a [async] coroutine as its result, 
+so that the resulting [Deferred] contains a reference to itself:
+
+```kotlin       
+// from the main thread call coroutine in a background thread or otherwise share it
+val result = GlobalScope.async {
+    coroutineContext // return its coroutine context that contains a self-reference
+}
+// now result will not be reclaimed -- memory leak
+```    
+
+A disciplined use of communication objects to transfer immutable data between coroutines does not 
+result in any memory reclamation problems. 
      
 <!--- MODULE kotlinx-coroutines-core -->
 <!--- INDEX kotlinx.coroutines -->
@@ -101,6 +122,7 @@ or use atomic classes ([AtomicInt](https://kotlinlang.org/api/latest/jvm/stdlib/
 [SingleThreadDispatcher.close]: https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-single-thread-dispatcher/-single-thread-dispatcher/close.html
 [SingleThreadDispatcher.worker]: https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-single-thread-dispatcher/-single-thread-dispatcher/worker.html
 [Dispatchers.Default]: https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html
+[GlobalScope]: https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/index.html
 [Dispatchers.Main]: https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-main.html
 [runBlocking]: https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html
 [withContext]: https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html
