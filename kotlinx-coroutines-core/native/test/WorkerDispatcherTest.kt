@@ -6,6 +6,7 @@ package kotlinx.coroutines
 
 import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.*
 import kotlin.native.concurrent.*
 import kotlin.test.*
 
@@ -145,6 +146,32 @@ class WorkerDispatcherTest : TestBase() {
     }
 
     @Test
+    fun testConflatedBroadcast() = runTest {
+        expect(1)
+        val latch = Channel<Unit>()
+        val broadcast = ConflatedBroadcastChannel<Data>()
+        val sub = broadcast.openSubscription()
+        launch(dispatcher) {
+            assertEquals(dispatcher.thread, currentThread())
+            expect(2)
+            broadcast.send(Data("A"))
+            latch.receive()
+            expect(4)
+            broadcast.send(Data("B"))
+        }
+        val result1 = sub.receive()
+        expect(3)
+        assertEquals(mainThread, currentThread())
+        assertEquals("A", result1.s)
+        assertTrue(result1.isFrozen)
+        latch.send(Unit)
+        val result2 = sub.receive()
+        assertEquals("B", result2.s)
+        sub.cancel()
+        finish(5)
+    }
+
+    @Test
     fun testFlowOn() = runTest {
         expect(1)
         val flow = flow {
@@ -195,6 +222,58 @@ class WorkerDispatcherTest : TestBase() {
             }
         }
         finish(3)
+    }
+
+    @Test
+    fun testMutexStress() = runTest {
+        expect(1)
+        val mutex = Mutex()
+        val atomic = AtomicInt(0)
+        val n = 100
+        val k = 239 // mutliplier
+        val job = launch(dispatcher) {
+            repeat(n) {
+                mutex.withLock {
+                    atomic.value = atomic.value + 1 // unsafe mutation but under mutex
+                }
+            }
+        }
+        // concurrently mutate
+        repeat(n) {
+            mutex.withLock {
+                atomic.value = atomic.value + k
+            }
+        }
+        // join job
+        job.join()
+        assertEquals((k + 1) * n, atomic.value)
+        finish(2)
+    }
+
+    @Test
+    fun testSemaphoreStress() = runTest {
+        expect(1)
+        val semaphore = Semaphore(1)
+        val atomic = AtomicInt(0)
+        val n = 100
+        val k = 239 // mutliplier
+        val job = launch(dispatcher) {
+            repeat(n) {
+                semaphore.withPermit {
+                    atomic.value = atomic.value + 1 // unsafe mutation but under mutex
+                }
+            }
+        }
+        // concurrently mutate
+        repeat(n) {
+            semaphore.withPermit {
+                atomic.value = atomic.value + k
+            }
+        }
+        // join job
+        job.join()
+        assertEquals((k + 1) * n, atomic.value)
+        finish(2)
     }
 
     private data class Data(val s: String)
