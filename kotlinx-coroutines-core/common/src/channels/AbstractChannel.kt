@@ -326,8 +326,12 @@ internal abstract class AbstractSendChannel<E> : SendChannel<E> {
         closedList.forEachReversed { it.resumeReceiveClosed(closed) }
         // and do other post-processing
         onClosedIdempotent(closed)
-        // and dispose on Kotlin/Native if closed is the only element in the queue now
-        disposeLockFreeLinkedList { queue.takeIf { it.nextNode === closed } }
+        // dispose on Kotlin/Native if closed is the only element in the queue now
+        disposeQueue { closed }
+    }
+
+    internal inline fun disposeQueue(closed: () -> Closed<*>?) {
+        disposeLockFreeLinkedList { queue.takeIf { it.nextNode === closed() } }
     }
 
     /**
@@ -641,6 +645,8 @@ internal abstract class AbstractChannel<E> : AbstractSendChannel<E>(), Channel<E
     internal fun cancelInternal(cause: Throwable?): Boolean =
         close(cause).also {
             onCancelIdempotent(it)
+            // dispose on Kotlin/Native if closed is the only element in the queue now
+            disposeQueue { closedForSend }
         }
 
     /**
