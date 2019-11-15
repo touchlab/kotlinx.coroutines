@@ -8,20 +8,36 @@ import kotlinx.atomicfu.*
 import kotlin.coroutines.*
 import kotlin.native.concurrent.*
 
+/**
+ * Creates a coroutine execution context using a single thread.
+ */
 @ExperimentalCoroutinesApi
 public actual fun newSingleThreadContext(name: String): SingleThreadDispatcher =
     WorkerCoroutineDispatcherImpl(name).apply { start() }
 
+/**
+ * A coroutine dispatcher that is confined to a single thread.
+ */
 @ExperimentalCoroutinesApi
 @Suppress("ACTUAL_WITHOUT_EXPECT")
 public actual abstract class SingleThreadDispatcher : CoroutineDispatcher() {
+    /**
+     * A reference to this dispatcher's worker.
+     */
+    @ExperimentalCoroutinesApi
+    public abstract val worker: Worker
+
     internal abstract val thread: Thread
 
+    /**
+     * Closes this coroutine dispatcher and shuts down its thread.
+     */
+    @ExperimentalCoroutinesApi
     public actual abstract fun close()
 }
 
 private class WorkerCoroutineDispatcherImpl(name: String) : SingleThreadDispatcher(), ThreadBoundInterceptor, Delay {
-    private val worker = Worker.start(name = name)
+    override val worker = Worker.start(name = name)
     override val thread = WorkerThread(worker)
     private val isClosed = atomic(false)
     
