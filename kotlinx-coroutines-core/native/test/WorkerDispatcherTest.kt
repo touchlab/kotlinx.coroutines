@@ -142,6 +142,7 @@ class WorkerDispatcherTest : TestBase() {
         val result2 = sub.receive()
         assertEquals("B", result2.s)
         sub.cancel()
+        broadcast.close() // dispose memory
         finish(4)
     }
 
@@ -168,6 +169,7 @@ class WorkerDispatcherTest : TestBase() {
         val result2 = sub.receive()
         assertEquals("B", result2.s)
         sub.cancel()
+        broadcast.close() // dispose memory
         finish(5)
     }
 
