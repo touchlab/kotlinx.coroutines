@@ -1,11 +1,11 @@
 package benchmarks
 
-import doGeomDistrWork
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.scheduling.ExperimentalCoroutineDispatcher
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import macrobenchmarks.*
 import org.openjdk.jmh.annotations.*
 import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.TimeUnit

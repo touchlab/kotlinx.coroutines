@@ -3,10 +3,10 @@
  */
 package benchmarks.flow
 
-import doGeomDistrWork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
+import macrobenchmarks.*
 import org.openjdk.jmh.annotations.*
 import java.util.concurrent.TimeUnit
 
