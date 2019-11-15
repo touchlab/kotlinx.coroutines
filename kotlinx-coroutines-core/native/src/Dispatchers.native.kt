@@ -5,9 +5,11 @@
 package kotlinx.coroutines
 
 import kotlin.coroutines.*
+import kotlinx.atomicfu.*
+import kotlinx.atomicfu.locks.*
 
 public actual object Dispatchers {
-    public actual val Default: CoroutineDispatcher = LazyDefaultDispatcher()
+    public actual val Default: CoroutineDispatcher get() = DefaultDispatcher
     public actual val Main: MainCoroutineDispatcher = createMainDispatcher(Default)
     public actual val Unconfined: CoroutineDispatcher get() = kotlinx.coroutines.Unconfined // Avoid freezing
 }
@@ -15,8 +17,16 @@ public actual object Dispatchers {
 internal expect fun createMainDispatcher(default: CoroutineDispatcher): MainCoroutineDispatcher
 
 // Create DefaultDispatcher thread only when explicitly requested
-private class LazyDefaultDispatcher : CoroutineDispatcher(), Delay, ThreadBoundInterceptor {
-    private val delegate by lazy { newSingleThreadContext("DefaultDispatcher") }
+internal object DefaultDispatcher : CoroutineDispatcher(), Delay, ThreadBoundInterceptor {
+    private val lock = reentrantLock()
+    private val _delegate = atomic<SingleThreadDispatcher?>(null)
+//    private val delegate by lazy { newSingleThreadContext("DefaultDispatcher") }
+    private val delegate: SingleThreadDispatcher
+        get() = _delegate.value ?: getOrCreateDefaultDispatcher()
+
+    private fun getOrCreateDefaultDispatcher() = lock.withLock {
+        _delegate.value ?: newSingleThreadContext("DefaultDispatcher").also { _delegate.value = it }
+    }
 
     override val thread: Thread
         get() = delegate.thread
@@ -28,4 +38,9 @@ private class LazyDefaultDispatcher : CoroutineDispatcher(), Delay, ThreadBoundI
         (delegate as Delay).invokeOnTimeout(timeMillis, block)
     override fun toString(): String =
         delegate.toString()
+
+    // only for tests
+    internal fun shutdown() {
+        _delegate.getAndSet(null)?.close()
+    }
 }
