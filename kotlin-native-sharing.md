@@ -42,7 +42,7 @@ its main queue event loop using `NSRunLoopRun`, `UIApplicationMain`, or ` NSAppl
 
 ## Switching threads
 
-You switch from one dispatcher to anther using a regular [withContext] function. For example, a code running 
+You switch from one dispatcher to another using a regular [withContext] function. For example, a code running 
 on the main thread might do:
 
 ```kotlin                
@@ -58,7 +58,7 @@ If you capture a reference to any object that is defined in the main thread outs
 block inside `withContext` then it gets automatically frozen for transfer from the main thread to the
 background thread. Freezing is recursive, so you might accidentally freeze unrelated objects that are part of
 main thread's mutable state and get 
-[InvalidMutabilityException](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.native.concurrent/-invalid-mutability-exception/index.html).
+[InvalidMutabilityException](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.native.concurrent/-invalid-mutability-exception/index.html)
 later in unrelated parts of your code.
 The easiest way to trouble-shoot it is to mark the objects that should not have been frozen using 
 [ensureNeverFrozen](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.native.concurrent/ensure-never-frozen.html)
