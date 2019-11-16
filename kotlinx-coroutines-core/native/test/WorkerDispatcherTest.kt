@@ -170,6 +170,7 @@ class WorkerDispatcherTest : TestBase() {
         assertEquals("B", result2.s)
         sub.cancel()
         broadcast.close() // dispose memory
+        latch.close() // dispose memory
         finish(5)
     }
 
