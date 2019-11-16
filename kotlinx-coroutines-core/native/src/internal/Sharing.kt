@@ -15,12 +15,10 @@ internal actual open class ShareableRefHolder {
     internal var shareable: ShareableObject<*>? = null // cached result of asShareable call
 }
 
-@Suppress("NOTHING_TO_INLINE") // Should be NOP
 internal actual fun ShareableRefHolder.disposeSharedRef() {
     shareable?.disposeRef()
 }
 
-@Suppress("NOTHING_TO_INLINE") // Should be NOP
 internal actual fun <T> T.asShareable(): DisposableHandle where T : DisposableHandle, T : ShareableRefHolder {
     shareable?.let { return it as DisposableHandle }
     return ShareableDisposableHandle(this).also { shareable = it }
@@ -65,6 +63,10 @@ internal actual fun <T> Continuation<T>.shareableInterceptedResumeCancellableWit
             useRef().intercepted().resumeCancellableWith(result)
         }
     }
+}
+
+internal actual inline fun disposeContinuation(cont: () -> Continuation<*>) {
+    (cont() as ShareableContinuation<*>).disposeRef()
 }
 
 internal actual fun <T> CancellableContinuationImpl<T>.shareableResume(delegate: Continuation<T>, useMode: Int) {
@@ -156,7 +158,7 @@ internal open class ShareableObject<T : Any>(obj: T) {
         "Shareable[${if (currentThread() == thread) _ref.value?.get()?.toString() ?: "used" else "thread!=$thread"}]"
 }
 
-private class ShareableContinuation<T>(
+internal class ShareableContinuation<T>(
     cont: Continuation<T>
 ) : ShareableObject<Continuation<T>>(cont), Continuation<T> {
     override val context: CoroutineContext = cont.context
