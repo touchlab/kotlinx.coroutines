@@ -233,6 +233,8 @@ internal open class CancellableContinuationImpl<in T>(
     internal fun getResult(): Any? {
         setupCancellation()
         if (trySuspend()) return COROUTINE_SUSPENDED
+        // When cancellation does not suspend on Kotlin/Native it shall dispose its continuation which it will not use
+        disposeContinuation { delegate }
         // otherwise, onCompletionInternal was already invoked & invoked tryResume, and the result is in the state
         val state = this.state
         if (state is CompletedExceptionally) throw recoverStackTrace(state.cause, this)
