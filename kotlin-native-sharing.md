@@ -101,7 +101,7 @@ or use atomic classes ([AtomicInt](https://kotlinlang.org/api/latest/jvm/stdlib/
 Code working in a single thread on Kotlin/Native enjoys fully automatic memory management. Any object graph that
 is not referenced anymore is automatically reclaimed even if it contains cyclic chains of references. This does
 not extend to shared objects, though. Frozen immutable objects can be freely shared, even if then can contain
-reference cycles, but shareable [communication objects][#communication-objects] leak if a reference cycle
+reference cycles, but shareable [communication objects](#communication-objects) leak if a reference cycle
 to them appears. The easiest way to demonstrate it is to return a reference to a [async] coroutine as its result, 
 so that the resulting [Deferred] contains a reference to itself:
 
