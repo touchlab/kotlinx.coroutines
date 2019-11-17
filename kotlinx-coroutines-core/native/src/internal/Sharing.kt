@@ -65,6 +65,7 @@ internal actual fun <T> Continuation<T>.shareableInterceptedResumeCancellableWit
     }
 }
 
+@PublishedApi
 internal actual inline fun disposeContinuation(cont: () -> Continuation<*>) {
     (cont() as ShareableContinuation<*>).disposeRef()
 }
@@ -158,6 +159,7 @@ internal open class ShareableObject<T : Any>(obj: T) {
         "Shareable[${if (currentThread() == thread) _ref.value?.get()?.toString() ?: "used" else "thread!=$thread"}]"
 }
 
+@PublishedApi
 internal class ShareableContinuation<T>(
     cont: Continuation<T>
 ) : ShareableObject<Continuation<T>>(cont), Continuation<T> {

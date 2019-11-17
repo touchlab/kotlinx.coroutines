@@ -26,6 +26,7 @@ internal open class CancellableContinuationImpl<in T>(
     delegate: Continuation<T>,
     resumeMode: Int
 ) : DispatchedTask<T>(resumeMode), CancellableContinuation<T>, CoroutineStackFrame {
+    @PublishedApi // for Kotlin/Native
     final override val delegate: Continuation<T> = delegate.asShareable()
     public override val context: CoroutineContext = delegate.context
 
