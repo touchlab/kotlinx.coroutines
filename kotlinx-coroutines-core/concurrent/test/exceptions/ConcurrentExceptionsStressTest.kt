@@ -23,6 +23,7 @@ class ConcurrentExceptionsStressTest : TestBase() {
     }
 
     @Test
+    @Ignore // todo: this test is leaking memory on Kotlin/Native
     fun testStress() = runTest {
         repeat(nRepeat) {
             testOnce()
