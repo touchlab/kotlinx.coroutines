@@ -119,6 +119,7 @@ class WorkerDispatcherTest : TestBase() {
             assertEquals(42, atomic.value)
             val result2 = channel.receive()
             assertEquals("B", result2.s)
+            assertEquals(null, channel.receiveOrNull()) // must try to receive the last one to dispose memory
             finish(4)
         }
     }

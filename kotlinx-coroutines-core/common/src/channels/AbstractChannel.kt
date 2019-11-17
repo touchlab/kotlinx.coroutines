@@ -252,6 +252,7 @@ internal abstract class AbstractSendChannel<E> : SendChannel<E> {
          */
         val closeAdded = queue.addLastIfPrev(closed) { it !is Closed<*> }
         val actuallyClosed = if (closeAdded) closed else queueTail() as Closed<*>
+        disposeLockFreeLinkedList { closed.takeUnless { closeAdded } }
         helpClose(actuallyClosed)
         if (closeAdded) invokeOnCloseHandler(cause)
         return closeAdded // true if we have closed
@@ -521,6 +522,7 @@ internal abstract class AbstractChannel<E> : AbstractSendChannel<E>(), Channel<E
     protected open fun pollInternal(): Any? {
         while (true) {
             val send = takeFirstSendOrPeekClosed() ?: return POLL_FAILED
+            disposeQueue { send as? Closed<*> }
             val token = send.tryResumeSend(null)
             if (token != null) {
                 assert { token === RESUME_TOKEN }

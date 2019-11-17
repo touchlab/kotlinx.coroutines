@@ -139,6 +139,7 @@ internal open class ArrayChannel<E>(
             if (size == capacity) {
                 loop@ while (true) {
                     send = takeFirstSendOrPeekClosed() ?: break
+                    disposeQueue { send as? Closed<*> }
                     val token = send!!.tryResumeSend(null)
                     if (token != null) {
                         assert { token === RESUME_TOKEN }
