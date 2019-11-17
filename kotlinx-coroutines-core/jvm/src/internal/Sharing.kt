@@ -75,3 +75,10 @@ internal actual inline fun <T> ArrayList<T>.addOrUpdate(index: Int, element: T, 
     add(index, element)
 }
 
+@InlineOnly
+@Suppress("NOTHING_TO_INLINE") // Should be NOP
+internal actual inline fun weakReference(obj: Any): Any = obj
+
+@InlineOnly
+@Suppress("NOTHING_TO_INLINE") // Should be NOP
+internal actual inline fun weakReferenceUnwrap(ref: Any?): Any? = ref

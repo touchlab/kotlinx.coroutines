@@ -10,6 +10,7 @@ import kotlinx.coroutines.*
 import kotlin.coroutines.*
 import kotlin.coroutines.intrinsics.*
 import kotlin.native.concurrent.*
+import kotlin.native.ref.*
 
 internal actual open class ShareableRefHolder {
     internal var shareable: ShareableObject<*>? = null // cached result of asShareable call
@@ -107,6 +108,11 @@ internal actual inline fun <T> ArrayList<T>.addOrUpdate(index: Int, element: T, 
         add(index, element)
     }
 }
+
+@Suppress("NOTHING_TO_INLINE")
+internal actual inline fun weakReference(obj: Any): Any = WeakReference(obj)
+
+internal actual fun weakReferenceUnwrap(ref: Any?): Any? = (ref as WeakReference<Any>?)?.get()
 
 internal open class ShareableObject<T : Any>(obj: T) {
     val thread: Thread = currentThread()

@@ -57,3 +57,9 @@ internal actual inline fun <T> ArrayList<T>.addOrUpdate(element: T, update: (Arr
 internal actual inline fun <T> ArrayList<T>.addOrUpdate(index: Int, element: T, update: (ArrayList<T>) -> Unit) {
     add(index, element)
 }
+
+@Suppress("NOTHING_TO_INLINE") // Should be NOP
+internal actual inline fun weakReference(obj: Any): Any = obj
+
+@Suppress("NOTHING_TO_INLINE") // Should be NOP
+internal actual inline fun weakReferenceUnwrap(ref: Any?): Any? = ref
