@@ -501,6 +501,7 @@ public open class JobSupport constructor(active: Boolean) : Job, ChildJob, Paren
                     }
                 }
                 else -> { // is complete
+                    disposeLockFreeLinkedList { nodeCache }
                     // :KLUDGE: We have to invoke a handler in platform-specific way via `invokeIt` extension,
                     // because we play type tricks on Kotlin/JS and handler is not necessarily a function there
                     if (invokeImmediately) handler.invokeIt((state as? CompletedExceptionally)?.cause)

@@ -5,6 +5,8 @@
 package kotlinx.coroutines
 
 import kotlinx.atomicfu.*
+import kotlinx.coroutines.internal.*
+import kotlin.native.ref.*
 
 /**
  * This exception gets thrown if an exception is caught while processing [CompletionHandler] invocation for [Job].
@@ -40,8 +42,12 @@ public actual fun CancellationException(message: String?, cause: Throwable?) : C
 internal actual class JobCancellationException public actual constructor(
     message: String,
     public override val cause: Throwable?,
-    internal actual val job: Job
+    job: Job
 ) : CancellationException(message.withCause(cause)) {
+    private val ref = WeakReference(job)
+    internal actual val job: Job?
+        get() = ref.get()
+
     override fun toString(): String = "${super.toString()}; job=$job"
     override fun equals(other: Any?): Boolean =
         other === this ||

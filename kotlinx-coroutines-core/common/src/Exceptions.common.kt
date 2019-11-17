@@ -20,7 +20,7 @@ internal expect class JobCancellationException(
     cause: Throwable?,
     job: Job
 ) : CancellationException {
-    internal val job: Job
+    internal val job: Job?
 }
 
 internal class CoroutinesInternalError(message: String, cause: Throwable) : Error(message, cause)
