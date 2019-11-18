@@ -40,7 +40,7 @@ This is the dispatcher that is used by default in [GlobalScope].
 
 > This limitation may be lifted in the future with the default dispatcher becoming multi-threaded and/or
 > its coroutines becoming isolated from each other, so please do not assume that different coroutines running 
-> in the default dispatcher can shared mutable data between themselves. 
+> in the default dispatcher can share mutable data between themselves. 
 
 A [Main][Dispatchers.Main] dispatcher is
 properly defined for all Darwin (Apple) targets, refers to the main thread, and integrates
