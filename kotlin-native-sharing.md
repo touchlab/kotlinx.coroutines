@@ -1,5 +1,13 @@
 # Sharing and background threads on Kotlin/Native
 
+## Preview disclaimer
+
+This is a preview release of sharing and backgrounds threads for coroutines on Kotlin/Native. 
+Details of this implementation will change in the future. See also [Known Problems](#known-problems)
+at the end of this document.
+
+## Introduction
+
 Kotlin/Native provides an automated memory management that works with mutable data objects separately 
 and independently in each thread that uses Kotlin/Native runtime. Sharing data between threads is limited:
 
@@ -28,8 +36,13 @@ For interoperability with code that is using Kotlin/Native
 API you can get a reference to single-threaded dispacher's worker using its [SingleThreadDispatcher.worker] property.
 
 A [Default][Dispatchers.Default] dispatcher on Kotlin/Native contains a single background thread.
-This is the dispatcher that used by default in [GlobalScope]. 
-There is currently no background thread-pool like on JVM. A [Main][Dispatchers.Main] dispatcher is
+This is the dispatcher that is used by default in [GlobalScope]. 
+
+> This limitation may be lifted in the future with the default dispatcher becoming multi-threaded and/or
+> its coroutines becoming isolated from each other, so please do not assume that different coroutines running 
+> in the default dispatcher can shared mutable data between themselves. 
+
+A [Main][Dispatchers.Main] dispatcher is
 properly defined for all Darwin (Apple) targets, refers to the main thread, and integrates
 with Core Foundation main event loop. 
 On Linux and Windows there is no platform-defined main thread, so [Main][Dispatchers.Main] simply refers
@@ -115,7 +128,24 @@ val result = GlobalScope.async {
 
 A disciplined use of communication objects to transfer immutable data between coroutines does not 
 result in any memory reclamation problems. 
-     
+
+## Shared channels are resources
+
+All kinds of [Channel] and [BroadcastChannel] implementations become _resources_ on Kotlin/Native when shared. 
+They must be closed and fully consumed in order for their memory to be reclaimed. When they are not shared, they 
+can be dropped in any state and will be reclaimed by memory manager, but a shared channel generally will not be reclaimed
+unless closed and consumed.
+
+This does not affect [Flow], because it is a cold abstraction. Even though [Flow] internally uses channels to transfer
+data between threads, it always properly closes these channels when completing collection of data.
+
+## Known problems
+
+The current implementation is tested and works for all kinds of single-threaded cases and simple scenarios that
+transfer data between two thread like shown in [Switching Threads](#switching-threads) section. However, it is known
+to leak memory in scenarios involving concurrency under load, for example when multiple children coroutines running 
+in different threads are simultaneously cancelled. 
+                                                           
 <!--- MODULE kotlinx-coroutines-core -->
 <!--- INDEX kotlinx.coroutines -->
 [newSingleThreadContext]: https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/new-single-thread-context.html
