@@ -35,7 +35,7 @@ import kotlin.coroutines.intrinsics.*
  * @param block the coroutine code.
  */
 @Throws(InterruptedException::class)
-public fun <T> runBlocking(context: CoroutineContext = EmptyCoroutineContext, block: suspend CoroutineScope.() -> T): T {
+public actual fun <T> runBlocking(context: CoroutineContext, block: suspend CoroutineScope.() -> T): T {
     val currentThread = Thread.currentThread()
     val contextInterceptor = context[ContinuationInterceptor]
     val eventLoop: EventLoop?
