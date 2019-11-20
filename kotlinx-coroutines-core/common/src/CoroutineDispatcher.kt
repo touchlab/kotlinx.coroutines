@@ -80,6 +80,15 @@ public abstract class CoroutineDispatcher :
     public abstract fun dispatch(context: CoroutineContext, block: Runnable)
 
     /**
+     * Reserved for [Dispatchers.Unconfined] that returns `false` here because its
+     * [dispatch] method throws [UnsupportedOperationException]. It is used in [yield] implementation.
+     *
+     * @suppress **This an internal API and should not be used from general code.**
+     */
+    @InternalCoroutinesApi
+    public open fun isDispatchSupported(context: CoroutineContext): Boolean = true
+
+    /**
      * Dispatches execution of a runnable `block` onto another thread in the given `context`
      * with a hint for the dispatcher that the current dispatch is triggered by a [yield] call, so that the execution of this
      * continuation may be delayed in favor of already dispatched coroutines.

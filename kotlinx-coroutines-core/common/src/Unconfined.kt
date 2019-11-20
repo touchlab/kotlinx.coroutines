@@ -11,6 +11,7 @@ import kotlin.coroutines.*
  */
 internal object Unconfined : CoroutineDispatcher() {
     override fun isDispatchNeeded(context: CoroutineContext): Boolean = false
+    override fun isDispatchSupported(context: CoroutineContext): Boolean = false
     override fun dispatch(context: CoroutineContext, block: Runnable) { throw UnsupportedOperationException() }
     override fun toString(): String = "Unconfined"
 }
