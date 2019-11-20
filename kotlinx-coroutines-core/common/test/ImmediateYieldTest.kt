@@ -32,4 +32,15 @@ class ImmediateYieldTest : TestBase() {
         override fun dispatch(context: CoroutineContext, block: Runnable) =
             delegate.dispatch(context, block)
     }
+
+    @Test
+    fun testWrappedUnconfinedDispatcherYield() = runTest {
+        expect(1)
+        launch(wrapperDispatcher(Dispatchers.Unconfined)) {
+            expect(2)
+            yield() // Would not work with wrapped unconfined dispatcher
+            expect(3)
+        }
+        finish(4) // after launch
+    }
 }
