@@ -19,11 +19,8 @@ public suspend fun yield(): Unit = suspendCoroutineUninterceptedOrReturn sc@ { u
     val context = uCont.context
     context.checkCompletion()
     val cont = uCont.intercepted() as? DispatchedContinuation<Unit> ?: return@sc Unit
-    // Special case for Unconfined dispatcher that does not support the concept of "dispatch" and where
-    // "dispatchYield" function cannot be used.
-    if (!cont.dispatcher.isDispatchSupported(context)) {
-        return@sc if (cont.yieldUndispatched()) COROUTINE_SUSPENDED else Unit
-    }
+    // Special case for the unconfined dispatcher where "dispatchYield" function cannot be used (throws exception).
+    if (cont.dispatcher === Unconfined) return@sc if (cont.yieldUndispatched()) COROUTINE_SUSPENDED else Unit
     cont.dispatchYield(Unit)
     COROUTINE_SUSPENDED
 }
