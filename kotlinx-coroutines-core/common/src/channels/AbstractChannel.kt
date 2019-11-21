@@ -4,13 +4,19 @@
 
 package kotlinx.coroutines.channels
 
-import kotlinx.atomicfu.*
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.*
 import kotlinx.coroutines.internal.*
-import kotlinx.coroutines.intrinsics.*
-import kotlinx.coroutines.selects.*
-import kotlin.coroutines.*
-import kotlin.jvm.*
+import kotlinx.coroutines.intrinsics.startCoroutineUnintercepted
+import kotlinx.coroutines.selects.ALREADY_SELECTED
+import kotlinx.coroutines.selects.SelectClause1
+import kotlinx.coroutines.selects.SelectClause2
+import kotlinx.coroutines.selects.SelectInstance
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.startCoroutine
+import kotlin.jvm.JvmField
 
 /**
  * Abstract send channel. It is a base class for all send channel implementations.
@@ -822,7 +828,17 @@ internal abstract class AbstractChannel<E> : AbstractSendChannel<E>(), Channel<E
     }
 
     private class Itr<E>(val channel: AbstractChannel<E>) : ChannelIterator<E> {
-        var result: Any? = POLL_FAILED // E | POLL_FAILED | Closed
+        private val aresult = atomic<Any?>(POLL_FAILED)
+
+        var result: Any?
+            get() = aresult.value
+            set(value) {
+                aresult.value = value
+            }
+
+//        init {
+//            ensureNeverFrozen()
+//        }
 
         override suspend fun hasNext(): Boolean {
             // check for repeated hasNext
